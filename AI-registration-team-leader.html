@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大貿險家 AI教育 工具箱 | 雙主題風格版</title>
+    <meta name="description" content="探索大貿險家精心設計的 AI教育工具，提升專業與效率。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Inter:wght@500&display=swap" rel="stylesheet">
+
+    <style>
+        /* 這裡是「大貿險家」風格的 CSS 樣式 */
+        @property --angle-1 { syntax: "<angle>"; inherits: false; initial-value: -75deg; }
+        @property --angle-2 { syntax: "<angle>"; inherits: false; initial-value: -45deg; }
+
+        :root {
+            /* 深色模式 (預設): 深灰 (#222) 到 較淺的深灰 (#444) */
+            --color-background: linear-gradient(135deg, #222222 0%, #444444 100%);
+            --color-text-primary: #ffffff;
+            --color-text-secondary: rgba(255, 255, 255, 0.85);
+            --color-glass-bg: rgba(255, 255, 255, 0.05);
+            --color-glass-highlight: rgba(255, 255, 255, 0.3);
+            --color-input-bg: rgba(0, 0, 0, 0.2);
+            --color-input-border: rgba(255, 255, 255, 0.3);
+            --color-input-placeholder: rgba(255, 255, 255, 0.5);
+            --color-accent: #FFD700; /* 金色 */
+            --color-particle: ["#FFD700", "#C0C0C0", "#FFFFFF"]; /* 粒子顏色: 金, 銀, 白 */
+            --color-particle-link: "#C0C0C0"; /* 銀色 */
+            
+            --color-button-shadow-1: rgba(0, 0, 0, 0.05);
+            --color-button-shadow-2: rgba(255, 255, 255, 0.5);
+            --color-button-shadow-3: rgba(0, 0, 0, 0.2);
+            --color-button-shadow-4: rgba(255, 255, 255, 0.2);
+            --anim--hover-time: 400ms;
+            --anim--hover-ease: cubic-bezier(0.25, 1, 0.5, 1);
+            --spacing-small: 8px;
+            --spacing-medium: 16px;
+            --spacing-large: 32px;
+            --spacing-xlarge: 64px;
+            --border-radius-medium: 24px;
+        }
+        
+        body.light-mode {
+            /* 淺色模式: 淺灰 (#F0F0F0) 到 淡金色 (#FFF8DC) */
+            --color-background: linear-gradient(135deg, #F0F0F0 0%, #FFF8DC 100%);
+            --color-text-primary: #0F0F1B;
+            --color-text-secondary: rgba(15, 15, 27, 0.85);
+            --color-glass-bg: rgba(255, 255, 255, 0.4);
+            --color-glass-highlight: rgba(0, 0, 0, 0.1);
+            --color-input-bg: rgba(255, 255, 255, 0.2);
+            --color-input-border: rgba(0, 0, 0, 0.2);
+            --color-input-placeholder: rgba(15, 15, 27, 0.5);
+            --color-accent: #DAA520; /* 較深的金色 (GoldenRod) */
+            --color-particle: ["#DAA520", "#808080", "#333333"]; /* 粒子顏色: 深金, 灰, 深灰 */
+            --color-particle-link: "#808080"; /* 灰色 */
+
+            --color-button-shadow-1: rgba(255, 255, 255, 0.1);
+            --color-button-shadow-2: rgba(0, 0, 0, 0.3);
+            --color-button-shadow-3: rgba(0, 0, 0, 0.1);
+            --color-button-shadow-4: rgba(0, 0, 0, 0.1);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { height: 100%; scroll-behavior: smooth; }
+        body {
+            min-height: 100%; width: 100%; display: flex; flex-direction: column;
+            font-family: "Inter", "Noto Sans TC", sans-serif;
+            background: var(--color-background); /* 使用漸層背景 */
+            background-size: cover;
+            -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+            color: var(--color-text-secondary);
+            transition: background 0.5s ease;
+        }
+        
+        #tsparticles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        h1, h2, h3, h4 { color: var(--color-text-primary); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); font-weight: 700; }
+        p { color: var(--color-text-secondary); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+        .container { width: 90%; max-width: 1200px; margin: 0 auto; position: relative; z-index: 2; }
+        main { flex-grow: 1; width: 100%; padding-top: var(--spacing-large); }
+
+        .glass-container {
+            position: relative; border-radius: var(--border-radius-medium);
+            isolation: isolate; box-shadow: 0px 6px 21px -8px rgba(0, 0, 0, 0.5);
+            transition: box-shadow 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background-color: var(--color-glass-bg);
+        }
+        .glass-container::before {
+            content: ''; position: absolute; inset: 0; z-index: 0;
+            border-radius: inherit; box-shadow: inset 0 0 12px -4px var(--color-glass-highlight);
+            pointer-events: none;
+        }
+        .glass-container::after {
+            content: ''; position: absolute; inset: 0; z-index: -1;
+            border-radius: inherit; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            pointer-events: none;
+        }
+
+        .site-header {
+            width: 100%; padding: var(--spacing-medium); position: sticky; top: 0; z-index: 100;
+        }
+        .site-header .container {
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: var(--spacing-medium);
+        }
+        .site-title { font-size: clamp(1.5rem, 4vw, 1.75rem); margin: 0; }
+        .main-nav { display: flex; align-items: center; gap: var(--spacing-small); }
+
+        .hero { padding: var(--spacing-xlarge) 0; text-align: center; }
+        .hero .container { padding: var(--spacing-large); }
+        .hero-image img {
+            max-width: 150px; height: 150px; border-radius: 50%; object-fit: cover;
+            margin: 0 auto var(--spacing-large); box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+        }
+        .hero-title { font-size: clamp(2rem, 5vw, 3rem); }
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.25rem); color: var(--color-text-secondary);
+            margin-bottom: var(--spacing-large);
+        }
+
+        #tools { padding: var(--spacing-xlarge) 0; }
+        .main-section-title {
+            font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: var(--spacing-xlarge);
+            text-align: center; transition: opacity 0.3s ease;
+        }
+        #tool-controls {
+            margin-bottom: var(--spacing-xlarge); display: flex; flex-direction: column;
+            align-items: center; gap: 1.5rem;
+        }
+        
+        #tool-filters {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .dropdown-button {
+             display: flex; align-items: center; gap: var(--spacing-small);
+        }
+        .dropdown-menu {
+            position: absolute; top: 110%; left: 50%; z-index: 10;
+            display: flex; flex-direction: column; gap: var(--spacing-small);
+            padding: var(--spacing-small); min-width: 200px;
+            opacity: 0; visibility: hidden;
+            transform-origin: top center;
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+            transform: translateX(-50%) translateY(-10px) scaleY(0.95);
+        }
+        .dropdown-menu.visible {
+            opacity: 1; visibility: visible;
+            transform: translateX(-50%) translateY(0) scaleY(1);
+        }
+        
+        #search-input {
+            background-color: var(--color-input-bg); border: 1px solid var(--color-input-border);
+            border-radius: 999px; padding: 0.75rem 1.5rem; color: var(--color-text-primary);
+            font-family: inherit; font-size: 1rem; backdrop-filter: blur(5px);
+            width: 100%; max-width: 400px; transition: border-color 0.3s ease;
+        }
+        #search-input::placeholder { color: var(--color-input-placeholder); }
+        #search-input:focus { outline: none; border-color: var(--color-accent); }
+        
+        .tool-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-large);
+        }
+
+        .tool-card { display: flex; flex-direction: column; height: 100%; }
+        .tool-card.hidden { display: none !important; }
+        
+        @keyframes subtle-shake {
+            0%, 100% { transform: translateY(-5px) scale(1.02) rotate(0deg); }
+            33% { transform: translateY(-5px) scale(1.02) rotate(-1.5deg); }
+            66% { transform: translateY(-5px) scale(1.02) rotate(1.5deg); }
+        }
+        .interactive-card.glass-container:hover {
+            animation: subtle-shake 0.5s ease-out;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 30px rgba(0, 0, 0, 0.2);
+            transform: translateY(-5px) scale(1.02);
+        }
+
+        .card-content {
+            position: relative; z-index: 2; padding: 1.5rem; flex-grow: 1;
+            display: flex; flex-direction: column;
+        }
+        .tool-name { font-size: 1.25rem; margin-bottom: 0.5rem; }
+        .tool-description { font-size: 0.9rem; flex-grow: 1; margin-bottom: 1.5rem; }
+        
+        .card-buttons {
+            margin-top: auto; display: flex; flex-wrap: wrap;
+            gap: var(--spacing-small); justify-content: flex-start;
+        }
+        .card-buttons .button-wrap { flex-grow: 0; }
+
+        .button-wrap {
+            position: relative; z-index: 2; border-radius: 999vw;
+            background: transparent; pointer-events: none; flex-shrink: 0;
+        }
+        .button-wrap button {
+            --border-width: 2px;
+            all: unset; cursor: pointer; position: relative;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            pointer-events: auto; z-index: 3;
+            background: linear-gradient(-75deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+            border-radius: 999vw;
+            box-shadow: inset 0 0.125em 0.125em var(--color-button-shadow-1), inset 0 -0.125em 0.125em var(--color-button-shadow-2), 0 0.25em 0.125em -0.125em var(--color-button-shadow-3), 0 0 0.1em 0.25em inset var(--color-button-shadow-4);
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            transition: all var(--anim--hover-time) var(--anim--hover-ease);
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .button-wrap button:hover { transform: scale(0.975); }
+        .button-wrap button:active, .button-wrap button.active {
+            transform: scale(0.95);
+            /* 調整 active 顏色以搭配金色 */
+            background: linear-gradient(-75deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.1));
+        }
+        
+        .button-wrap button span, .button-wrap button .theme-icon {
+            position: relative; display: block; user-select: none;
+            -webkit-user-select: none; font-weight: 500; font-size: 0.9rem;
+            color: var(--color-text-primary); text-shadow: 0em 0.1em 0.2em rgba(0, 0, 0, 0.25);
+            transition: all var(--anim--hover-time) var(--anim--hover-ease);
+            padding: 0.8em 1.5em; white-space: nowrap;
+            width: 100%; 
+            text-align: center; 
+        }
+        
+        .theme-icon { padding: 0.8em !important; line-height: 1; }
+        .theme-icon svg { width: 1em; height: 1em; fill: var(--color-text-primary); }
+
+        .button-wrap button span::after {
+            content: ""; display: block; position: absolute; z-index: 1;
+            width: calc(100% - var(--border-width)); height: calc(100% - var(--border-width));
+            top: calc(0% + var(--border-width) / 2); left: calc(0% + var(--border-width) / 2);
+            box-sizing: border-box; border-radius: 999vw; overflow: clip;
+            background: linear-gradient(var(--angle-2), rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 40% 50%, rgba(255, 255, 255, 0) 55%);
+            mix-blend-mode: screen; pointer-events: none; background-size: 200% 200%;
+            background-position: 0% 50%; background-repeat: no-repeat;
+            transition: background-position calc(var(--anim--hover-time) * 1.25) var(--anim--hover-ease), --angle-2 calc(var(--anim--hover-time) * 1.25) var(--anim--hover-ease);
+        }
+        .button-wrap button:hover span::after { background-position: 25% 50%; }
+        .button-wrap button:active span::after, .button-wrap button.active span::after { background-position: 50% 15%; --angle-2: -15deg; }
+
+        .button-wrap button::after {
+            content: ""; position: absolute; z-index: 1; inset: 0; border-radius: 999vw;
+            width: calc(100% + var(--border-width)); height: calc(100% + var(--border-width));
+            top: calc(0% - var(--border-width) / 2); left: calc(0% - var(--border-width) / 2);
+            padding: var(--border-width); box-sizing: border-box;
+            background: conic-gradient(from var(--angle-1) at 50% 50%, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0) 5% 40%, rgba(0, 0, 0, 0.5) 50%, rgba(0, 0, 0, 0) 60% 95%, rgba(0, 0, 0, 0.5)), linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5));
+            mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            mask-composite: exclude;
+            transition: all var(--anim--hover-time) var(--anim--hover-ease), --angle-1 500ms ease;
+            box-shadow: inset 0 0 0 calc(var(--border-width) / 2) rgba(255, 255, 255, 0.5);
+        }
+        .button-wrap button:hover::after { --angle-1: -125deg; }
+        .button-wrap button:active::after, .button-wrap button.active::after { --angle-1: -75deg; }
+        
+        .site-footer {
+            width: 100%; padding: var(--spacing-large);
+            text-align: center; margin-top: var(--spacing-xlarge);
+        }
+
+        @media (max-width: 768px) {
+            .site-header .container { flex-direction: column; justify-content: center; }
+            .hero-image img { max-width: 120px; height: 120px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="tsparticles"></div>
+    
+    <header class="site-header glass-container">
+        <div class="container">
+            <h1 class="site-title">大貿險家 教育AI工具箱</h1>
+            <nav class="main-nav">
+                <div class="button-wrap">
+                    <button onclick="window.open('#', '_blank')" rel="noopener noreferrer">
+                        <span>大貿險家 | 專案AI應用</span>
+                    </button>
+                </div>
+                <div class="button-wrap">
+                    <button id="theme-switcher" aria-label="切換佈景主題"></button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container glass-container">
+                 <div class="hero-image">
+                    <!-- 替換為佔位圖片 -->
+                    <img src="https://placehold.co/150x150/DAA520/FFFFFF?text=Logo" alt="大貿險家 AI教育 工具箱 代表圖像">
+                </div>
+                <div class="hero-content">
+                    <h2 class="hero-title"擁抱 AI 智慧，革新您的教學模式</h2>
+                    <p class="hero-subtitle">體驗專為教師設計的 AI 解決方案，協助您優化課程、豐富教材、精準評量並簡化行政事務，釋放更多時間專注於啟發學生。<br> 聯繫：coolokey@gmail.com</p>
+                    <div class="button-wrap">
+                         <button onclick="document.getElementById('tools').scrollIntoView();">
+                            <span>開始探索</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tools">
+            <div class="container">
+                <h2 class="main-section-title">AI 工具總覽</h2>
+                 <div id="tool-controls">
+                    <div id="tool-filters">
+                        <div class="button-wrap">
+                            <button id="dropdown-btn" class="dropdown-button">
+                                <span>篩選分類 ▼</span>
+                            </button>
+                        </div>
+                        <div id="dropdown-menu-container" class="dropdown-menu glass-container">
+                             <!-- Filter options will be injected here -->
+                        </div>
+                    </div>
+                    <div id="tool-search">
+                         <input type="text" id="search-input" placeholder="輸入關鍵字搜尋...">
+                    </div>
+                 </div>
+                <div id="tool-grid" class="tool-grid">
+                    <h2 id="loading-message" style="text-align: center; grid-column: 1 / -1;">正在從雲端載入工具中...</h2>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer glass-container">
+        <div class="container">
+            <p>© 2025 大貿險家. All rights reserved. | 聯繫：coolokey@gmail.com</p>
+        </div>
+    </footer>
+
+    <!-- 載入粒子背景JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles@3.4.0/tsparticles.bundle.min.js"></script>
+    
+    <script>
+        // --- 1. 設定您的 Google Sheet (適用於 GitHub Pages) ---
+        // 請務必將這些替換成您自己的試算表 ID 和工作表名稱
+        const SHEET_ID = '1HPXp7ZqdTHD0npBl8VXtqEWBJE4H8LUdNyBilgGiTeY';
+        const SHEET_NAME = 'ai教育'; // 請確保這是您分頁的正確名稱
+        
+        // 組合 Gviz 查詢 URL
+        const GOOGLE_SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
+
+        // --- 2. 頁面載入時執行 ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            
+            initializeTheme(); // 初始化主題 (深色/淺色)
+
+            // 呼叫 GAS 的函式來獲取資料
+            try {
+                showLoading("正在從雲端載入工具中...");
+                const allTools = await loadToolsFromSheet(GOOGLE_SHEET_URL);
+                if (allTools && allTools.length > 0) {
+                    onDataLoaded(allTools); // 成功後呼叫
+                } else {
+                    showError("試算表中沒有資料，或資料格式不符。");
+                }
+            } catch (error) {
+                console.error('Error fetching/parsing sheet data:', error);
+                // 顯示更詳細的錯誤給使用者
+                let userError = `資料載入失敗。原因: ${error.message}. `;
+                if (error.message.includes("404")) {
+                     userError += "請檢查您的 Google Sheet ID 是否正確。";
+                } else if (error.message.includes("欄位")) {
+                    userError += "請確認試算表欄位 (A, B, C, D) 皆有資料。";
+                } else {
+                    userError += "請檢查 Sheet ID, 工作表名稱, 以及試算表是否已設為「知道連結的任何人均可檢視」。";
+                }
+                showError(userError);
+            }
+        });
+
+        // --- 3. 顯示/錯誤 處理 ---
+        const toolGrid = document.getElementById('tool-grid');
+        const loadingMessage = document.getElementById('loading-message');
+
+        function showLoading(message) {
+            loadingMessage.textContent = message;
+            loadingMessage.style.color = 'var(--color-text-primary)';
+            toolGrid.innerHTML = ''; // 清空舊卡片
+            toolGrid.appendChild(loadingMessage);
+        }
+
+        function showError(errorMsg) {
+            loadingMessage.textContent = errorMsg;
+            loadingMessage.style.color = '#FF5555'; // 顯示為紅色
+            toolGrid.innerHTML = '';
+            toolGrid.appendChild(loadingMessage);
+        }
+        
+        // --- 4. (GitHub 版) 從 Google Sheet Gviz API 抓取資料 ---
+        // (修正版：直接解析 A, B, C, D 欄位)
+        async function loadToolsFromSheet(url) {
+            let response;
+            try {
+                response = await fetch(url);
+            } catch (networkError) {
+                 throw new Error("網路連線失敗。請檢查您的網路。");
+            }
+            
+            if (!response.ok) {
+                throw new Error(`網路回應錯誤 (Code: ${response.status})。`);
+            }
+            
+            const text = await response.text();
+            
+            // 檢查回傳的是否是 HTML 錯誤頁面 (例如 404 或權限不足)
+            if (text.trim().startsWith("<!DOCTYPE html>")) {
+                 throw new Error("無法存取試算表。請確認 Google Sheet ID 是否正確，且共用權限已設為「知道連結的任何人均可檢視」。");
+            }
+
+            let data;
+            try {
+                // 移除 Google Gviz API 回傳的 JSONP 包裝
+                data = JSON.parse(text.substring(47, text.length - 2));
+            } catch (parseError) {
+                 throw new Error("解析試算表資料失敗。請檢查工作表名稱 (SHEET_NAME) 是否正確。");
+            }
+
+            if (!data.table || !data.table.rows || data.table.rows.length === 0) {
+                // 如果 rows 是空的但標頭存在，代表試算表沒資料
+                if (data.table && data.table.cols) {
+                    return []; // 回傳空陣列，onDataLoaded 會處理
+                }
+                throw new Error("試算表回傳資料為空或格式不正確。");
+            }
+
+            // 檢查欄位是否存在
+            if (data.table.cols.length < 4) {
+                 throw new Error(`試算表需要至少 4 欄 (A, B, C, D)，但目前只有 ${data.table.cols.length} 欄。`);
+            }
+            
+            const tools = [];
+            const rows = data.table.rows.slice(1); // 略過第一行 (標頭)
+
+            rows.forEach((row, index) => {
+                // c[0] 是 A 欄, c[1] 是 B 欄, ...
+                // 檢查 row 和 row.c 是否存在
+                if (row && row.c) {
+                    const title = row.c[0]?.v;
+                    const description = row.c[1]?.v;
+                    const link = row.c[2]?.v;
+                    const category = row.c[3]?.v;
+
+                    // 確保所有必要的資料都存在
+                    if (title && description && link && category) {
+                        if (!link.startsWith('http')) {
+                             console.warn(`第 ${index + 2} 行資料的連結格式不正確 (非 http): ${link}`);
+                             // 仍然加入，但按鈕可能無法點擊
+                        }
+                        tools.push({
+                            name: title,
+                            description: description,
+                            categories: [category], 
+                            url1: link,
+                            url1Name: '前往應用 →' 
+                        });
+                    } else {
+                         console.warn(`第 ${index + 2} 行資料不完整，已略過。`);
+                    }
+                }
+            });
+            
+            return tools;
+        }
+
+
+        // --- 5. (共用) 成功載入資料後，渲染頁面 ---
+        function onDataLoaded(allTools) {
+            toolGrid.innerHTML = ''; // 清空 "載入中..."
+            
+            if (allTools.length === 0) {
+                 showError("試算表中沒有資料。 (已略過標頭)");
+                 return;
+            }
+
+            // 產生卡片
+            allTools.forEach(data => {
+                const card = document.createElement('div');
+                card.className = 'tool-card glass-container interactive-card';
+                // 將類別(陣列)轉換為逗號分隔的字串，存入 data-category
+                card.dataset.category = data.categories.join(','); 
+                
+                let buttonsHTML = '';
+                if (data.url1 && data.url1.startsWith('http')) {
+                    buttonsHTML += `<div class="button-wrap"><button onclick="window.open('${data.url1}', '_blank')"><span>${data.url1Name || '前往應用 →'}</span></button></div>`;
+                }
+                if (data.url2 && data.url2.startsWith('http')) { // 雖然您的格式沒有，但保留彈性
+                    buttonsHTML += `<div class="button-wrap"><button onclick="window.open('${data.url2}', '_blank')"><span>${data.url2Name || '前往應用 →'}</span></button></div>`;
+                }
+                
+                card.innerHTML = `
+                    <div class="card-content">
+                        <h4 class="tool-name">${data.name}</h4>
+                        <p class="tool-description">${data.description || '暫無說明'}</p>
+                        <div class="card-buttons">${buttonsHTML}</div>
+                    </div>`;
+                toolGrid.appendChild(card);
+            });
+
+            // 產生篩選器並啟動功能
+            generateFilterButtons(allTools);
+            initializePageFunctions();
+        }
+
+        // --- 6. (共用) 主題切換 (淺色/深色) ---
+        const themeSwitcher = document.getElementById('theme-switcher');
+        const body = document.body;
+        const sunIcon = `<span class="theme-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,18c-3.31,0-6-2.69-6-6s2.69-6,6-6s6,2.69,6,6S15.31,18,12,18zM12,8c-2.21,0-4,1.79-4,4c0,2.21,1.79,4,4,4s4-1.79,4-4C16,9.79,14.21,8,12,8zM11,1h2v3h-2V1zM11,20h2v3h-2V20zM3.55,4.95l1.41-1.41L7.05,5.64L5.64,7.05L3.55,4.95zM16.95,18.36l1.41-1.41l2.12,2.12l-1.41,1.41L16.95,18.36zM1,11h3v2H1V11zM20,11h3v2h-3V11zM5.64,16.95l1.41,1.41L4.95,20.45l-1.41-1.41L5.64,16.95zM18.36,5.64l1.41,1.41L20.45,4.95l-1.41-1.41L18.36,5.64z"/></svg></span>`;
+        const moonIcon = `<span class="theme-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,22c-5.52,0-10-4.48-10-10S6.48,2,12,2c1.54,0,3,0.35,4.34,0.98C14.9,4.2,14,5.55,14,7c0,3.31,2.69,6,6,6c1.45,0,2.8-0.9,3.98-2.34C21.65,19,19.54,22,12,22z"/></svg></span>`;
+
+        function setTheme(theme) {
+            localStorage.setItem('theme', theme);
+            body.classList.toggle('light-mode', theme === 'light');
+            themeSwitcher.innerHTML = theme === 'light' ? moonIcon : sunIcon;
+            initializeParticles(theme); // 重設粒子效果
+        }
+
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+            const currentTheme = savedTheme || (prefersLight ? 'light' : 'dark');
+            setTheme(currentTheme);
+            themeSwitcher.addEventListener('click', () => {
+                setTheme(body.classList.contains('light-mode') ? 'dark' : 'light');
+            });
+        }
+        
+        // (共用) 類別排序 (您可以自訂)
+        const categoryOrder = [
+            // "推薦工具", "教學備課", ... (您可以把 'ai工具' 底下的類別放進來排序)
+        ];
+
+        // --- 7. (共用) 產生篩選按鈕 ---
+        function generateFilterButtons(tools) {
+            const dropdownMenu = document.getElementById('dropdown-menu-container');
+            // 從所有工具中提取不重複的類別
+            const categories = [...new Set(tools.flatMap(tool => tool.categories))];
+            
+            // 排序
+            categories.sort((a, b) => {
+                const indexA = categoryOrder.indexOf(a);
+                const indexB = categoryOrder.indexOf(b);
+                const effectiveIndexA = indexA === -1 ? Infinity : indexA;
+                const effectiveIndexB = indexB === -1 ? Infinity : indexB;
+                // 如果都不在排序清單中，則使用中文筆劃排序
+                if (effectiveIndexA === Infinity && effectiveIndexB === Infinity) {
+                    return a.localeCompare(b, 'zh-Hant');
+                }
+                return effectiveIndexA - effectiveIndexB;
+            });
+
+            // 產生按鈕 HTML
+            let buttonsHTML = `<div class="button-wrap"><button class="filter-btn" data-filter="all"><span>顯示全部</span></button></div>`;
+            categories.forEach(category => {
+                buttonsHTML += `<div class="button-wrap"><button class="filter-btn" data-filter="${category}"><span>${category}</span></button></div>`;
+            });
+            dropdownMenu.innerHTML = buttonsHTML;
+        }
+
+        // --- 8. (共用) 啟動篩選/搜尋功能 ---
+        function initializePageFunctions() {
+            const dropdownBtn = document.getElementById('dropdown-btn');
+            const dropdownMenu = document.getElementById('dropdown-menu-container');
+            const searchInput = document.getElementById('search-input');
+            const mainTitle = document.querySelector('.main-section-title');
+            const toolCards = document.querySelectorAll('.tool-card'); 
+            let activeFilter = 'all';
+
+            function filterAndSearchTools() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                let hasVisibleCard = false;
+                
+                toolCards.forEach(card => {
+                    const categories = card.dataset.category.split(','); // 卡片上的類別
+                    const cardText = card.textContent.toLowerCase();
+                    
+                    const filterMatch = (activeFilter === 'all' || categories.includes(activeFilter));
+                    const searchMatch = (searchTerm === '' || cardText.includes(searchTerm));
+                    
+                    card.classList.toggle('hidden', !(filterMatch && searchMatch));
+                    if (filterMatch && searchMatch) hasVisibleCard = true;
+                });
+                
+                // 處理「找不到結果」的訊息
+                let noResultsMessage = document.getElementById('no-results-message');
+                if (!hasVisibleCard && !noResultsMessage) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.id = 'no-results-message';
+                    messageDiv.innerHTML = '<h2 style="text-align: center; grid-column: 1 / -1;">找不到符合條件的工具。</h2>';
+                    toolGrid.appendChild(messageDiv);
+                } else if (hasVisibleCard && noResultsMessage) {
+                    noResultsMessage.remove();
+                }
+            }
+
+            // 下拉選單點擊
+            dropdownBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('visible');
+            });
+            // 點擊頁面其他地方關閉選單
+            document.addEventListener('click', () => dropdownMenu.classList.remove('visible'));
+            
+            // 點擊篩選按鈕
+            dropdownMenu.addEventListener('click', (event) => {
+                const clickedButton = event.target.closest('button.filter-btn');
+                if (clickedButton) {
+                    event.stopPropagation();
+                    activeFilter = clickedButton.dataset.filter; // 更新當前篩選
+                    const buttonText = clickedButton.querySelector('span').textContent;
+
+                    dropdownBtn.querySelector('span').textContent = `${buttonText} ▼`;
+                    dropdownMenu.classList.remove('visible');
+
+                    // 更新中央大標題
+                    mainTitle.style.opacity = 0;
+                    setTimeout(() => {
+                        mainTitle.textContent = (activeFilter === 'all') ? 'AI 工具總覽' : buttonText;
+                        mainTitle.style.opacity = 1;
+                    }, 150);
+                    
+                    filterAndSearchTools(); // 執行篩選
+                }
+            });
+
+            // 搜尋框輸入
+            if (searchInput) searchInput.addEventListener('input', filterAndSearchTools);
+        }
+
+        // --- 9. (共用) 粒子背景 ---
+        function initializeParticles(theme = 'dark') {
+            const particlesConfig = {
+                fpsLimit: 60,
+                background: { color: { value: "transparent" } },
+                particles: {
+                    number: { value: 30, density: { enable: true, area: 800 } },
+                    shape: { type: "circle" },
+                    opacity: { value: { min: 0.1, max: 0.4 } },
+                    size: { value: { min: 1, max: 3 } },
+                    links: { enable: true, distance: 150, opacity: 0.1, width: 1 },
+                    move: { enable: true, speed: 1, direction: "none", random: true, straight: false, outModes: { default: "out" } }
+                },
+                interactivity: { events: { onHover: { enable: true, mode: "bubble" } }, modes: { bubble: { distance: 200, size: 5, duration: 2, opacity: 1 } } },
+                detectRetina: true,
+            };
+            
+            // 根據主題設定粒子和連結的顏色
+            if (theme === 'light') {
+                // 將 JS 中的粒子顏色設定改為讀取 CSS 變數
+                particlesConfig.particles.color = { value: JSON.parse(getComputedStyle(document.documentElement).getPropertyValue('--color-particle')) };
+                particlesConfig.particles.links.color = getComputedStyle(document.documentElement).getPropertyValue('--color-particle-link');
+            } else {
+                // 將 JS 中的粒子顏色設定改為讀取 CSS 變數
+                particlesConfig.particles.color = { value: JSON.parse(getComputedStyle(document.documentElement).getPropertyValue('--color-particle')) };
+                particlesConfig.particles.links.color = getComputedStyle(document.documentElement).getPropertyValue('--color-particle-link');
+            }
+            
+            // 檢查 tsParticles 是否已載入
+            if (typeof tsParticles !== 'undefined') {
+                tsParticles.load({ id: "tsparticles", options: particlesConfig });
+            } else {
+                console.warn("tsParticles not loaded yet.");
+            }
+        }
+    </script>
+</body>
+</html>
+
