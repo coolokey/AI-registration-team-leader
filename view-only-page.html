@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="zh-Hant"><head>
+<html lang="zh-Hant">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTML 圖片與影片插入工具</title>
@@ -345,14 +346,14 @@
 
         <!-- Live Preview -->
         <div class="preview-container">
-            <iframe id="preview" class=""></iframe>
+            <iframe id="preview"></iframe>
             <!-- Text Formatting Context Menu -->
             <div id="textFormatMenu">
                 <button id="boldBtn">B</button>
                 <select id="sizeSelect">
                     <option value="1">極小</option>
                     <option value="2">稍小</option>
-                    <option value="3" selected="">正常</option>
+                    <option value="3" selected>正常</option>
                     <option value="4">稍大</option>
                     <option value="5">大</option>
                     <option value="6">加大</option>
@@ -366,11 +367,11 @@
         <div class="output-container">
              <button id="copyHtmlBtn" class="secondary">複製完整 HTML</button>
              <!-- 下載按鈕現在會處理移除 contenteditable 屬性 -->
-             <button id="downloadBtn" class="">下載完整 HTML 檔案 (純瀏覽模式)</button>
+             <button id="downloadBtn">下載完整 HTML 檔案 (純瀏覽模式)</button>
         </div>
         
         <div class="footer">
-            <a href="https://sites.google.com/view/a-gang-lao-shi-de-ke-ji-ying/" target="_blank" class="">Made by 大貿險家</a>
+            <a href="https://coolokey.github.io/AI-registration-team-leader/" target="_blank">Made by 大貿險家</a>
         </div>
     </div>
 
@@ -456,7 +457,7 @@
                 <div class="control-group">
                     <label for="youtubeAspectRatio">影片長寬比</label>
                     <select id="youtubeAspectRatio">
-                        <option value="16:9" selected="">16:9 (標準)</option>
+                        <option value="16:9" selected>16:9 (標準)</option>
                         <option value="4:3">4:3 (舊式)</option>
                         <option value="9:16">9:16 (直式)</option>
                     </select>
@@ -1041,5 +1042,5 @@
         window.addEventListener('load', setupEditor);
     </script>
 
-
-</body></html>
+</body>
+</html>
