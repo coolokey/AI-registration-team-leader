@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML 圖片與影片插入工具</title>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --light-gray: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-color: #212529;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #e9ecef;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            padding: 15px;
+            gap: 15px;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .controls {
+            flex-shrink: 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px var(--shadow-color);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .control-group label {
+            font-weight: 500;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #495057;
+        }
+        
+        input[type="text"], input[type="number"], select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            align-self: flex-end;
+        }
+        
+        button:hover {
+            background-color: #0b5ed7;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+
+        button.secondary {
+            background-color: var(--secondary-color);
+        }
+        button.secondary:hover {
+            background-color: #5c636a;
+        }
+        button.youtube {
+            background-color: var(--danger-color);
+        }
+        button.youtube:hover {
+            background-color: #bb2d3b;
+        }
+
+        .input-group-with-suffix {
+            display: flex;
+            align-items: center;
+        }
+        .input-group-with-suffix input {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            width: 80px;
+            -moz-appearance: textfield;
+        }
+        .input-group-with-suffix input::-webkit-outer-spin-button,
+        .input-group-with-suffix input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .input-group-with-suffix span {
+            padding: 8px 12px;
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-left: none;
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
+            font-size: 16px;
+            color: var(--secondary-color);
+        }
+
+        .preview-container {
+            flex-grow: 1;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px var(--shadow-color);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #preview {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 900px;
+            height: 80%;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-content h2 {
+            margin-top: 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .modal-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        #htmlInput, #youtubeUrl, #modalImageUrl, #gdocUrl {
+            flex-grow: 1;
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        #htmlInput {
+             font-family: 'Courier New', Courier, monospace;
+             resize: none;
+        }
+
+        .modal-actions {
+            margin-top: auto; /* Push actions to the bottom */
+            padding-top: 15px;
+            text-align: right;
+        }
+        
+        .output-container {
+            flex-shrink: 0;
+            display: flex;
+            gap: 15px;
+        }
+        .output-container button {
+            flex: 1;
+        }
+
+        /* GDoc Extractor & Image Modal Styles */
+        .image-modal-top-layout {
+            display: flex;
+            gap: 25px;
+            flex-shrink: 0;
+        }
+        .image-modal-url-input {
+            flex-grow: 1;
+            min-width: 0;
+        }
+        .image-modal-bottom-layout {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            min-height: 0;
+        }
+        
+        #gdocResults {
+            flex-grow: 1;
+            overflow-y: auto;
+            background-color: var(--light-gray);
+            border-radius: 6px;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            border: 1px solid var(--border-color);
+        }
+        .gdoc-img-card {
+            background-color: #fff;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            overflow: hidden;
+            height: 120px;
+        }
+        .gdoc-img-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .gdoc-img-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: #fdfdfd;
+        }
+        .image-settings {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex-shrink: 0;
+            width: 180px;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Text Format Context Menu */
+        #textFormatMenu {
+            position: absolute;
+            display: none;
+            background-color: #333;
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1001;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        #textFormatMenu button, #textFormatMenu select {
+            background-color: #555;
+            color: white;
+            border: 1px solid #666;
+            border-radius: 4px;
+            padding: 5px 8px;
+            cursor: pointer;
+        }
+        #textFormatMenu button:hover, #textFormatMenu select:hover {
+            background-color: #666;
+        }
+        #textFormatMenu #boldBtn {
+            font-weight: bold;
+        }
+        #textFormatMenu #colorPicker {
+            width: 30px;
+            height: 30px;
+            border: none;
+            padding: 0;
+            background: none;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        #textFormatMenu input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        #textFormatMenu input[type="color"]::-webkit-color-swatch {
+            border: none;
+        }
+
+        .footer {
+            text-align: center;
+            padding-top: 10px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Top Controls -->
+        <div class="controls">
+            <button id="importHtmlBtn" class="secondary">匯入 / 編輯 HTML</button>
+            <button id="imageModalBtn">插入 / 編輯圖片</button>
+            <button id="youtubeBtn" class="youtube">插入 YouTube 影片</button>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="preview-container">
+            <iframe id="preview" class=""></iframe>
+            <!-- Text Formatting Context Menu -->
+            <div id="textFormatMenu">
+                <button id="boldBtn">B</button>
+                <select id="sizeSelect">
+                    <option value="1">極小</option>
+                    <option value="2">稍小</option>
+                    <option value="3" selected="">正常</option>
+                    <option value="4">稍大</option>
+                    <option value="5">大</option>
+                    <option value="6">加大</option>
+                    <option value="7">最大</option>
+                </select>
+                <input type="color" id="colorPicker" value="#000000">
+            </div>
+        </div>
+
+        <!-- Output Section -->
+        <div class="output-container">
+             <button id="copyHtmlBtn" class="secondary">複製完整 HTML</button>
+             <!-- 下載按鈕現在會處理移除 contenteditable 屬性 -->
+             <button id="downloadBtn" class="">下載完整 HTML 檔案 (純瀏覽模式)</button>
+        </div>
+        
+        <div class="footer">
+            <a href="https://sites.google.com/view/a-gang-lao-shi-de-ke-ji-ying/" target="_blank" class="">Made by 大貿險家</a>
+        </div>
+    </div>
+
+    <!-- HTML Input Modal -->
+    <div id="htmlModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>匯入或編輯 HTML 原始碼</h2>
+            <textarea id="htmlInput" placeholder="在這裡貼上您的 HTML 程式碼..."></textarea>
+            <div class="modal-actions">
+                <button id="saveHtmlModalBtn">儲存並關閉</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="imageModalTitle">插入圖片</h2>
+            
+            <div class="image-modal-top-layout">
+                <div class="image-modal-url-input">
+                    <div class="control-group" style="width: 100%; margin-bottom: 15px;">
+                        <label for="modalImageUrl">圖片網址 (URL)</label>
+                        <input type="text" id="modalImageUrl" placeholder="貼上圖片網址...">
+                    </div>
+                    <div class="modal-input-group">
+                        <input type="url" id="gdocUrl" placeholder="貼上已「發佈到網路」的 Google 文件網址...">
+                        <button id="extractBtn">提取圖片</button>
+                    </div>
+                </div>
+                <div class="image-settings">
+                    <div class="control-group">
+                        <label for="modalImageWidth">圖片寬度</label>
+                        <div class="input-group-with-suffix">
+                           <input type="number" id="modalImageWidth" min="10" value="300" step="1">
+                           <span>px</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label for="modalImageAlign">圖片對齊</label>
+                        <select id="modalImageAlign">
+                            <option value="none">不設定 (預設)</option>
+                            <option value="center">置中</option>
+                            <option value="left">靠左</option>
+                            <option value="right">靠右</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 20px 0;">
+            
+            <div class="image-modal-bottom-layout">
+                <div id="gdocStatus"></div>
+                <div id="gdocResults">
+                    <p class="placeholder" style="grid-column: 1 / -1; text-align: center; color: #6c757d;">請輸入網址後點擊提取按鈕。</p>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="modalInsertImageBtn">在游標處插入圖片</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- YouTube Modal -->
+    <div id="youtubeModal" class="modal-overlay">
+        <div class="modal-content" style="height: auto; max-width: 600px;">
+            <h2>插入 YouTube 影片</h2>
+            <p style="font-size: 14px; color: #6c757d; margin-top: -10px; margin-bottom: 15px;">請貼上 YouTube 分享網址 (例如 https://youtu.be/...)</p>
+            <div class="modal-input-group" style="margin-bottom: 20px;">
+                <input type="url" id="youtubeUrl" placeholder="貼上 YouTube 分享網址...">
+            </div>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; margin-bottom: 20px;">
+                <div class="control-group">
+                    <label for="youtubeWidth">影片寬度</label>
+                    <div class="input-group-with-suffix">
+                       <input type="number" id="youtubeWidth" min="200" value="560" step="10">
+                       <span>px</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label for="youtubeAspectRatio">影片長寬比</label>
+                    <select id="youtubeAspectRatio">
+                        <option value="16:9" selected="">16:9 (標準)</option>
+                        <option value="4:3">4:3 (舊式)</option>
+                        <option value="9:16">9:16 (直式)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="youtubeAlign">影片對齊</label>
+                    <select id="youtubeAlign">
+                        <option value="center">置中 (預設)</option>
+                        <option value="left">靠左</option>
+                        <option value="right">靠右</option>
+                    </select>
+                </div>
+            </div>
+    
+            <div class="modal-actions" style="text-align: center;">
+                 <button id="insertYoutubeBtn" style="width: 100%;">插入影片</button>
+            </div>
+            <div id="youtubeStatus" style="margin-top: 10px; text-align: center;"></div>
+        </div>
+    </div>
+
+
+    <script>
+        // DOM Elements
+        const importHtmlBtn = document.getElementById('importHtmlBtn');
+        const htmlModal = document.getElementById('htmlModal');
+        const saveHtmlModalBtn = document.getElementById('saveHtmlModalBtn');
+        const htmlInput = document.getElementById('htmlInput');
+        const preview = document.getElementById('preview');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const copyHtmlBtn = document.getElementById('copyHtmlBtn');
+
+        // Image Modal Elements
+        const imageModalBtn = document.getElementById('imageModalBtn');
+        const imageModal = document.getElementById('imageModal');
+        const imageModalTitle = document.getElementById('imageModalTitle');
+        const modalImageUrl = document.getElementById('modalImageUrl');
+        const modalImageWidth = document.getElementById('modalImageWidth');
+        const modalImageAlign = document.getElementById('modalImageAlign');
+        const modalInsertImageBtn = document.getElementById('modalInsertImageBtn');
+        const gdocUrl = document.getElementById('gdocUrl');
+        const extractBtn = document.getElementById('extractBtn');
+        const gdocStatus = document.getElementById('gdocStatus');
+        const gdocResults = document.getElementById('gdocResults');
+
+        // YouTube Elements
+        const youtubeBtn = document.getElementById('youtubeBtn');
+        const youtubeModal = document.getElementById('youtubeModal');
+        const youtubeUrl = document.getElementById('youtubeUrl');
+        const insertYoutubeBtn = document.getElementById('insertYoutubeBtn');
+        const youtubeStatus = document.getElementById('youtubeStatus');
+        const youtubeWidth = document.getElementById('youtubeWidth');
+        const youtubeAlign = document.getElementById('youtubeAlign');
+        const youtubeAspectRatio = document.getElementById('youtubeAspectRatio');
+
+
+        // Text Formatting Elements
+        const textFormatMenu = document.getElementById('textFormatMenu');
+        const boldBtn = document.getElementById('boldBtn');
+        const sizeSelect = document.getElementById('sizeSelect');
+        const colorPicker = document.getElementById('colorPicker');
+
+        let selectedImage = null;
+        let originalSlideshowTemplate = null;
+
+        // --- Global Listeners ---
+        window.addEventListener('click', () => textFormatMenu.style.display = 'none');
+        textFormatMenu.addEventListener('click', (e) => e.stopPropagation());
+
+        // --- Modal Opening/Closing ---
+        importHtmlBtn.addEventListener('click', () => {
+            // 獲取當前 iframe 的完整 HTML 內容
+            htmlInput.value = preview.contentWindow.document.documentElement.outerHTML;
+            htmlModal.style.display = 'flex';
+        });
+
+        saveHtmlModalBtn.addEventListener('click', () => {
+            const htmlString = htmlInput.value;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlString, 'text/html');
+
+            let finalHtml = htmlString;
+            originalSlideshowTemplate = null; // Reset by default
+
+            // Check if it's the slideshow format and flatten it
+            if (doc.querySelector('.slides') && doc.querySelector('.slide-content')) {
+                // 1. Store the template
+                const templateDoc = doc.cloneNode(true);
+                const slidesContainer = templateDoc.querySelector('.slides');
+                if (slidesContainer) {
+                    slidesContainer.innerHTML = '<!--SLIDES_PLACEHOLDER-->'; // Use a placeholder
+                    originalSlideshowTemplate = templateDoc.documentElement.outerHTML;
+                }
+
+                // 2. Create the flattened version for the editor
+                const head = doc.head.innerHTML;
+                let bodyContent = '';
+                
+                doc.querySelectorAll('.slide-extract, .slide-content').forEach(element => {
+                    // Use innerHTML for slide-content, outerHTML for slide-extract (to keep the wrapper)
+                    const content = element.classList.contains('slide-content') ? element.innerHTML : element.outerHTML;
+                    // Prevent nested slide-extracts if user pastes flattened HTML back
+                    if (!element.classList.contains('slide-extract')) {
+                        bodyContent += `<div class="slide-extract" style="margin-bottom: 40px; border-bottom: 2px dashed #ccc; padding-bottom: 20px;">${content}</div>`;
+                    } else {
+                        bodyContent += content;
+                    }
+                });
+
+                finalHtml = `
+                    <!DOCTYPE html>
+                    <html lang="${doc.documentElement.lang || 'zh-Hant'}">
+                        <head>${head}</head>
+                        <body>${bodyContent}</body>
+                    </html>
+                `;
+            }
+
+            preview.onload = () => {
+                reinitializeEditorFunctionality(preview.contentDocument);
+                preview.onload = null;
+            };
+            const editorDoc = preview.contentDocument;
+            editorDoc.open();
+            editorDoc.write(finalHtml);
+            editorDoc.close();
+            htmlModal.style.display = 'none';
+        });
+
+        imageModalBtn.addEventListener('click', () => {
+            selectedImage = null;
+            imageModalTitle.textContent = '插入圖片';
+            modalInsertImageBtn.textContent = '在游標處插入圖片';
+            modalImageUrl.value = '';
+            modalImageWidth.value = 300;
+            modalImageAlign.value = 'none';
+            imageModal.style.display = 'flex';
+        });
+
+        youtubeBtn.addEventListener('click', () => {
+            youtubeModal.style.display = 'flex';
+            youtubeUrl.value = '';
+            youtubeStatus.innerHTML = '';
+        });
+        
+        [htmlModal, imageModal, youtubeModal].forEach(modal => {
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) modal.style.display = 'none';
+            });
+        });
+        
+        // --- GDoc Extractor Click Listener ---
+        extractBtn.addEventListener('click', extractImagesFromGDoc);
+        
+        // --- YouTube Modal Click Listener ---
+        insertYoutubeBtn.addEventListener('click', insertYoutubeVideo);
+
+        // --- Core Editor Logic ---
+        function updateOrInsertImage() {
+            if (selectedImage) {
+                // Update existing image
+                selectedImage.src = modalImageUrl.value;
+                selectedImage.style.width = `${modalImageWidth.value}px`;
+                const align = modalImageAlign.value;
+                let parent = selectedImage.parentElement;
+                let isWrapped = parent.dataset.isWrapper === 'true';
+
+                // 處理對齊和包裝器 div
+                if (align !== 'none' && !isWrapped) {
+                    // 如果需要對齊但沒有包裝器，則建立一個
+                    const wrapper = preview.contentWindow.document.createElement('div');
+                    wrapper.dataset.isWrapper = 'true';
+                    selectedImage.parentNode.insertBefore(wrapper, selectedImage);
+                    wrapper.appendChild(selectedImage);
+                    parent = wrapper;
+                } else if (align === 'none' && isWrapped) {
+                    // 如果不需要對齊但有包裝器，則移除包裝器
+                    parent.parentNode.insertBefore(selectedImage, parent);
+                    parent.parentNode.removeChild(parent);
+                    selectedImage.style.display = 'block';
+                    selectedImage.style.margin = '0 auto 1em auto';
+                }
+                
+                if (parent.dataset.isWrapper === 'true') {
+                    // 設定包裝器的對齊樣式
+                    parent.style.textAlign = align;
+                    parent.style.marginBottom = '1em';
+                    selectedImage.style.display = 'inline-block';
+                    selectedImage.style.margin = '';
+                    selectedImage.style.verticalAlign = 'middle';
+                } else if (align === 'none') {
+                    // 確保沒有包裝器時置中
+                    selectedImage.style.display = 'block';
+                    selectedImage.style.margin = '0 auto 1em auto';
+                }
+            } else {
+                // Insert new image
+                const url = modalImageUrl.value.trim();
+                if (!url) return;
+                const width = modalImageWidth.value;
+                const align = modalImageAlign.value;
+                let imgStyles = `width: ${width}px; height: auto; max-width: 100%;`;
+                let imageHtml = '';
+                if (align === 'none') {
+                    imgStyles += ` display: block; margin: 0 auto 1em auto;`;
+                    imageHtml = `<img src="${url}" style="${imgStyles}" alt="使用者插入的圖片">`;
+                } else {
+                    imgStyles += ` display: inline-block; vertical-align: middle;`;
+                    const wrapperStyles = `text-align: ${align}; margin-bottom: 1em;`;
+                    const imgTag = `<img src="${url}" style="${imgStyles}" alt="使用者插入的圖片">`;
+                    imageHtml = `<div style="${wrapperStyles}" data-is-wrapper="true">${imgTag}</div>`;
+                }
+                preview.contentWindow.focus();
+                // 插入圖片，並在後面加入一個 <p><br></p> 確保游標能夠移動
+                preview.contentWindow.document.execCommand('insertHTML', false, imageHtml + '<p><br></p>');
+            }
+            imageModal.style.display = 'none';
+        }
+        modalInsertImageBtn.addEventListener('click', updateOrInsertImage);
+
+        function getYoutubeVideoId(url) {
+            const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+            const match = url.match(regex);
+            return match ? match[1] : null;
+        }
+
+        function insertYoutubeVideo() {
+            const url = youtubeUrl.value.trim();
+            if (!url) {
+                youtubeStatus.innerHTML = '<p style="color: red;">請輸入網址。</p>';
+                return;
+            }
+            const videoId = getYoutubeVideoId(url);
+            if (!videoId) {
+                youtubeStatus.innerHTML = '<p style="color: red;">無法識別的 YouTube 網址，請確認格式是否正確。</p>';
+                return;
+            }
+
+            const width = youtubeWidth.value;
+            const align = youtubeAlign.value;
+            const aspectRatio = youtubeAspectRatio.value;
+            const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+
+            let paddingBottom = '56.25%'; // Default 16:9
+            if (aspectRatio === '4:3') {
+                paddingBottom = '75%';
+            } else if (aspectRatio === '9:16') {
+                paddingBottom = '177.78%';
+            }
+            
+            const iframeHtml = `<iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="${embedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            
+            const aspectRatioWrapper = `<div style="position: relative; padding-bottom: ${paddingBottom}; height: 0; overflow: hidden;">${iframeHtml}</div>`;
+
+            let outerWrapperStyles = `width: ${width}px; max-width: 100%; margin-bottom: 1em;`;
+
+            switch(align) {
+                case 'left': 
+                    outerWrapperStyles += ' margin-left: 0; margin-right: auto;'; 
+                    break;
+                case 'right': 
+                    outerWrapperStyles += ' margin-left: auto; margin-right: 0;'; 
+                    break;
+                case 'center': 
+                default: 
+                    outerWrapperStyles += ' margin-left: auto; margin-right: auto;'; 
+                    break;
+            }
+            
+            // 確保下載的 HTML 中沒有 contenteditable="false" 屬性
+            const youtubeHtml = `<div style="${outerWrapperStyles}">${aspectRatioWrapper}</div><p><br></p>`;
+            
+            preview.contentWindow.focus();
+            preview.contentWindow.document.execCommand('insertHTML', false, youtubeHtml);
+            youtubeModal.style.display = 'none';
+        }
+        
+        function reinitializeEditorFunctionality(editorDoc) {
+            if (!editorDoc.body) {
+                console.error("Editor body not found. Cannot re-initialize.");
+                return;
+            }
+            // 移除舊的樣式和 tooltip，以防重複載入
+            editorDoc.getElementById('tag-inspector-styles')?.remove();
+            editorDoc.getElementById('tag-inspector-tooltip')?.remove();
+
+            const inspectorStyleId = 'tag-inspector-styles';
+            if (!editorDoc.getElementById(inspectorStyleId)) {
+                const style = editorDoc.createElement('style');
+                style.id = inspectorStyleId;
+                style.innerHTML = `
+                    .inspector-hover-outline { outline: 1px dotted #dc3545 !important; box-shadow: inset 0 0 0 1px #dc3545; }
+                    #tag-inspector-tooltip { position: fixed; display: none; background-color: #dc3545; color: white; padding: 2px 6px; font-size: 12px; border-radius: 4px; pointer-events: none; z-index: 9999; font-family: monospace; }
+                `;
+                editorDoc.head.appendChild(style);
+            }
+            if (!editorDoc.getElementById('tag-inspector-tooltip')) {
+                const tooltip = editorDoc.createElement('div');
+                tooltip.id = 'tag-inspector-tooltip';
+                editorDoc.body.appendChild(tooltip);
+            }
+            
+            // 設定 contenteditable="true" 來啟用編輯模式
+            editorDoc.body.setAttribute('contenteditable', true);
+            try {
+                // 嘗試啟用圖片大小調整功能
+                editorDoc.execCommand('enableObjectResizing', false, true);
+            } catch (e) { console.warn("enableObjectResizing not supported.", e); }
+
+            const tagTooltip = editorDoc.getElementById('tag-inspector-tooltip');
+            let lastInspectedEl = null;
+            const hideInspector = () => {
+                if (lastInspectedEl) lastInspectedEl.classList.remove('inspector-hover-outline');
+                lastInspectedEl = null;
+                if (tagTooltip) tagTooltip.style.display = 'none';
+            };
+            // 標籤檢查器 (mouseover/mouseout/mousemove)
+            editorDoc.body.addEventListener('mouseover', (e) => {
+                const target = e.target;
+                if (!target || target.nodeType !== Node.ELEMENT_NODE) return;
+                if (target.tagName !== 'BODY' && target.tagName !== 'HTML') {
+                    if(lastInspectedEl && lastInspectedEl !== target) lastInspectedEl.classList.remove('inspector-hover-outline');
+                    target.classList.add('inspector-hover-outline');
+                    tagTooltip.textContent = target.tagName.toLowerCase();
+                    tagTooltip.style.display = 'block';
+                    lastInspectedEl = target;
+                }
+            });
+            editorDoc.body.addEventListener('mouseout', hideInspector);
+            editorDoc.body.addEventListener('mousemove', (e) => {
+                if (tagTooltip && tagTooltip.style.display === 'block') {
+                    tagTooltip.style.left = `${e.clientX + 15}px`;
+                    tagTooltip.style.top = `${e.clientY}px`;
+                }
+            });
+
+            // 圖片編輯/選取邏輯 (click)
+            editorDoc.body.addEventListener('click', (event) => {
+                hideInspector();
+                if (selectedImage && selectedImage !== event.target) {
+                    selectedImage.classList.remove('selected-image');
+                    selectedImage = null;
+                }
+                if (event.target.tagName === 'IMG') {
+                    selectedImage = event.target;
+                    selectedImage.classList.add('selected-image');
+                    // Populate controls and open modal for editing
+                    modalImageUrl.value = selectedImage.src;
+                    modalImageWidth.value = parseInt(selectedImage.style.width, 10) || selectedImage.offsetWidth;
+                    const parent = selectedImage.parentElement;
+                    if (parent.dataset.isWrapper === 'true') {
+                        const align = parent.style.textAlign;
+                        modalImageAlign.value = ['left', 'right', 'center'].includes(align) ? align : 'none';
+                    } else {
+                        modalImageAlign.value = 'none';
+                    }
+                    imageModalTitle.textContent = '編輯圖片';
+                    modalInsertImageBtn.textContent = '更新圖片';
+                    imageModal.style.display = 'flex';
+                }
+            });
+
+            // 右鍵選單邏輯 (contextmenu)
+            editorDoc.body.addEventListener('contextmenu', (e) => {
+                hideInspector();
+                const selection = editorDoc.getSelection();
+                if (selection.isCollapsed) {
+                    textFormatMenu.style.display = 'none';
+                    return;
+                }
+                e.preventDefault();
+                const previewRect = preview.getBoundingClientRect();
+                // 調整選單位置以正確顯示在 iframe 內部
+                textFormatMenu.style.display = 'flex';
+                textFormatMenu.style.left = `${e.clientX + previewRect.left}px`;
+                textFormatMenu.style.top = `${e.clientY + previewRect.top + 10}px`;
+            });
+        }
+        
+        function setupEditor() {
+            const initialContent = `<h2>歡迎使用 HTML 編輯器</h2>
+<p>您可以直接在這裡打字，或使用「匯入/編輯」按鈕貼上程式碼。</p>
+<p>點擊「插入/編輯圖片」按鈕來加入圖片，您可以從網址貼上，或從 Google 文件提取。</p>
+<p>插入的圖片可以用滑鼠拖動角落來調整大小，也可以點擊圖片後再次開啟編輯圖層修改設定。</p>
+<p><b>選取文字後按右鍵</b>，可以設定文字的粗細、大小和顏色。</p>
+<p style="color: #6c757d; font-style: italic;">將滑鼠移到任何元素上，可以查看其 HTML 標籤。</p>`;
+            preview.onload = () => {
+                 reinitializeEditorFunctionality(preview.contentDocument);
+                 preview.onload = null;
+            };
+            const editorDoc = preview.contentDocument;
+            editorDoc.open();
+            editorDoc.write(`
+                <!DOCTYPE html><html><head>
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 20px; line-height: 1.6; word-wrap: break-word; }
+                    img { max-width: 100%; height: auto; cursor: pointer; }
+                    img:hover { outline: 2px dashed #a0c3ff; }
+                    img.selected-image { outline: 3px solid #0d6efd !important; }
+                </style>
+                </head><body>${initialContent}</body></html>
+            `);
+            editorDoc.close();
+        }
+
+        // --- GDoc Image Extraction Functions (unchanged) ---
+        async function extractImagesFromGDoc() {
+            const url = gdocUrl.value.trim();
+            if (!url) {
+                showGDocStatus('請輸入有效的 Google 文件發佈網址。', 'error');
+                return;
+            }
+            gdocResults.innerHTML = '';
+            showGDocStatus('<div class="loader" style="margin: 0 auto;"></div><p style="text-align: center; margin-top: 5px;">正在抓取資料...</p>', 'loading');
+            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+            try {
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`網路錯誤: ${response.statusText}`);
+                const htmlText = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlText, 'text/html');
+                const images = doc.querySelectorAll('img');
+                if (images.length === 0) {
+                    showGDocStatus('在提供的網址中找不到任何圖片。', 'info');
+                    return;
+                }
+                gdocStatus.innerHTML = '';
+                let imageCount = 0;
+                images.forEach(img => {
+                    if (img.src && img.src.includes('googleusercontent.com')) {
+                        imageCount++;
+                        createImageCard(img.src);
+                    }
+                });
+                if (imageCount === 0) {
+                    showGDocStatus('找不到符合條件的 Google 文件圖片。', 'info');
+                } else {
+                    showGDocStatus(`成功提取 ${imageCount} 張圖片！點擊下方圖片即可選用。`, 'success');
+                }
+            } catch (error) {
+                console.error('提取錯誤:', error);
+                showGDocStatus(`無法抓取資料，請確認網址正確且已「發佈到網路」。<br><small>${error.message}</small>`, 'error');
+            }
+        }
+        function createImageCard(src) {
+            const card = document.createElement('div');
+            card.className = 'gdoc-img-card';
+            const thumbnail = document.createElement('img');
+            thumbnail.src = src;
+            thumbnail.alt = '提取的圖片';
+            thumbnail.loading = 'lazy';
+            card.appendChild(thumbnail);
+            card.onclick = () => {
+                modalImageUrl.value = src;
+            };
+            gdocResults.appendChild(card);
+        }
+        function showGDocStatus(message, type) {
+            let styles = 'padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid;';
+            switch (type) {
+                case 'error': styles += 'color: #721c24; background-color: #f8d7da; border-color: #f5c6cb;'; break;
+                case 'success': styles += 'color: #155724; background-color: #d4edda; border-color: #c3e6cb;'; break;
+                case 'info': styles += 'color: #0c5460; background-color: #d1ecf1; border-color: #bee5eb;'; break;
+                case 'loading': gdocStatus.innerHTML = message; return;
+            }
+            gdocStatus.innerHTML = `<div style="${styles}">${message}</div>`;
+        }
+
+        // --- Event Listeners for Controls ---
+        function getFinalHtml(forDownload = false) {
+            if (selectedImage) {
+                selectedImage.classList.remove('selected-image');
+                selectedImage = null;
+            }
+            
+            let finalHtml;
+            // 使用 cloneNode(true) 複製 document，避免修改原始 iframe 內容
+            const editorDoc = preview.contentWindow.document.documentElement.cloneNode(true);
+            const body = editorDoc.querySelector('body');
+            const head = editorDoc.querySelector('head');
+
+            // --- 核心修改邏輯：移除編輯模式的痕跡 ---
+            if (forDownload && body) {
+                // 1. 移除 contenteditable 屬性
+                body.removeAttribute('contenteditable');
+
+                // 2. 移除所有編輯功能添加的樣式和元素
+                // 移除標籤檢查器樣式
+                head.querySelector('#tag-inspector-styles')?.remove();
+                // 移除標籤檢查器 tooltip
+                body.querySelector('#tag-inspector-tooltip')?.remove();
+                // 移除所有圖片的選取/懸停樣式
+                const style = head.querySelector('style');
+                if (style) {
+                    style.innerHTML = style.innerHTML.replace(/img \{[^}]*cursor: pointer;[^}]*\}/g, 'img { max-width: 100%; height: auto; }');
+                    style.innerHTML = style.innerHTML.replace(/img:hover \{[^}]*outline: 2px dashed #a0c3ff;[^}]*\}/g, '');
+                    style.innerHTML = style.innerHTML.replace(/img\.selected-image \{[^}]*outline: 3px solid #0d6efd !important;[^}]*\}/g, '');
+                }
+
+                // 3. 移除標籤檢查器新增的 class
+                body.querySelectorAll('.inspector-hover-outline').forEach(el => {
+                    el.classList.remove('inspector-hover-outline');
+                });
+            }
+
+            // --- 重建 HTML ---
+            if (originalSlideshowTemplate) {
+                // 如果是簡報模式，則進行重組
+                const editedSlides = editorDoc.querySelectorAll('.slide-extract');
+                let slidesHtml = '';
+                editedSlides.forEach((slide, index) => {
+                    // 這裡移除 slide-extract 容器，只保留內容
+                    slidesHtml += `<article class="slide${index === 0 ? ' active' : ''}" data-index="${index}"><div class="slide-content">${slide.innerHTML}</div></article>`;
+                });
+                finalHtml = originalSlideshowTemplate.replace('<!--SLIDES_PLACEHOLDER-->', slidesHtml);
+
+            } else {
+                // 正常文件下載
+                const doctype = preview.contentWindow.document.doctype ? new XMLSerializer().serializeToString(preview.contentWindow.document.doctype) : '<!DOCTYPE html>';
+                finalHtml = `${doctype}\n${editorDoc.outerHTML}`;
+            }
+            return finalHtml;
+        }
+
+        downloadBtn.addEventListener('click', () => {
+            // 傳入 true，啟用移除 contenteditable 的邏輯
+            const finalHtml = getFinalHtml(true); 
+            const blob = new Blob([finalHtml], { type: 'text/html;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'view-only-page.html'; // 更改下載檔案名稱以區分
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        });
+
+        copyHtmlBtn.addEventListener('click', () => {
+            // 複製時不移除 contenteditable，保持與匯入/編輯的一致性
+            const finalHtml = getFinalHtml(false); 
+            const textArea = document.createElement('textarea');
+            textArea.value = finalHtml;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                const originalText = copyHtmlBtn.textContent;
+                copyHtmlBtn.textContent = '已複製！';
+                copyHtmlBtn.disabled = true;
+                setTimeout(() => {
+                    copyHtmlBtn.textContent = originalText;
+                    copyHtmlBtn.disabled = false;
+                }, 2000);
+            } catch (err) {
+                console.error('無法複製:', err);
+                const originalText = copyHtmlBtn.textContent;
+                copyHtmlBtn.textContent = '複製失敗';
+                copyHtmlBtn.disabled = true;
+                setTimeout(() => {
+                    copyHtmlBtn.textContent = originalText;
+                    copyHtmlBtn.disabled = false;
+                }, 2000);
+            }
+            document.body.removeChild(textArea);
+        });
+        
+        // --- Text Format Event Listeners ---
+        boldBtn.addEventListener('click', () => {
+            preview.contentWindow.document.execCommand('bold', false, null);
+            preview.contentWindow.focus();
+        });
+        sizeSelect.addEventListener('change', () => {
+            preview.contentWindow.document.execCommand('fontSize', false, sizeSelect.value);
+            preview.contentWindow.focus();
+        });
+        colorPicker.addEventListener('input', () => {
+            preview.contentWindow.document.execCommand('foreColor', false, colorPicker.value);
+            preview.contentWindow.focus();
+        });
+
+        // --- Initial Setup ---
+        window.addEventListener('load', setupEditor);
+    </script>
+
+
+</body></html>
