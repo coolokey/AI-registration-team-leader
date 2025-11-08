@@ -441,8 +441,9 @@
             }
                         
             const tools = [];
-            const rows = data.table.rows; // (*** 修改：不再 slice(1)，因為 Gviz API 傳回的 rows 不包含標頭 ***)
-            // (*** 注意：您的舊程式碼 slice(1) 會少讀第一筆資料，這裡也一併修正了 ***)
+            
+            // *** 修正：Gviz API 似乎會將第一列(標頭)也包含在 rows 裡，所以我們用 slice(1) 來略過它 ***
+            const rows = data.table.rows.slice(1); 
 
             rows.forEach((row, index) => {
                 // c[0] 是 A 欄, c[1] 是 B 欄, ...
@@ -474,7 +475,7 @@
                             url2Name: url2Name || null  // 如果 G 欄為空，傳入 null
                          });
                     } else {
-                         console.warn(`第 ${index + 1} 行資料不完整 (A, B, C, D 欄為必填)，已略過。`);
+                         console.warn(`第 ${index + 2} 行資料不完整 (A, B, C, D 欄為必填)，已略過。`); // (修正索引 +2)
                     }
                 }
             });
