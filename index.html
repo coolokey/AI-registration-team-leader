@@ -15,8 +15,8 @@
         @property --angle-2 { syntax: "<angle>"; inherits: false; initial-value: -45deg; }
 
         :root {
-            /* 深色模式 (預設): 深灰 (#222) 到 較淺的深灰 (#444) */
-            --color-background: linear-gradient(135deg, #222222 0%, #444444 100%);
+            /* 紫金色模式 (預設): 深紫 (#301934) 到 金 (accent) */
+            --color-background: linear-gradient(135deg, #301934 0%, #4E2C5B 100%);
             --color-text-primary: #ffffff;
             --color-text-secondary: rgba(255, 255, 255, 0.85);
             --color-glass-bg: rgba(255, 255, 255, 0.05);
@@ -25,8 +25,8 @@
             --color-input-border: rgba(255, 255, 255, 0.3);
             --color-input-placeholder: rgba(255, 255, 255, 0.5);
             --color-accent: #FFD700; /* 金色 */
-            --color-particle: '["#FFD700", "#C0C0C0", "#FFFFFF"]'; /* 粒子顏色: 金, 銀, 白 */
-            --color-particle-link: "#C0C0C0"; /* 銀色 */
+            --color-particle: '["#FFD700", "#9B59B6", "#FFFFFF"]'; /* 粒子顏色: 金, 紫, 白 */
+            --color-particle-link: "#9B59B6"; /* 紫色 */
                         
             --color-button-shadow-1: rgba(0, 0, 0, 0.05);
             --color-button-shadow-2: rgba(255, 255, 255, 0.5);
@@ -42,18 +42,18 @@
         }
                 
         body.light-mode {
-            /* 淺色模式: 淺灰 (#F0F0F0) 到 淡金色 (#FFF8DC) */
-            --color-background: linear-gradient(135deg, #F0F0F0 0%, #FFF8DC 100%);
-            --color-text-primary: #0F0F1B;
-            --color-text-secondary: rgba(15, 15, 27, 0.85);
+            /* 玫瑰金模式: 淺粉 (#FFF5F5) 到 玫瑰粉 (#FAD7D7) */
+            --color-background: linear-gradient(135deg, #FFF5F5 0%, #FAD7D7 100%);
+            --color-text-primary: #4C3B3B;
+            --color-text-secondary: rgba(76, 59, 59, 0.85);
             --color-glass-bg: rgba(255, 255, 255, 0.4);
             --color-glass-highlight: rgba(0, 0, 0, 0.1);
             --color-input-bg: rgba(255, 255, 255, 0.2);
-            --color-input-border: rgba(0, 0, 0, 0.2);
-            --color-input-placeholder: rgba(15, 15, 27, 0.5);
-            --color-accent: #DAA520; /* 較深的金色 (GoldenRod) */
-            --color-particle: '["#DAA520", "#808080", "#333333"]'; /* 粒子顏色: 深金, 灰, 深灰 */
-            --color-particle-link: "#808080"; /* 灰色 */
+            --color-input-border: rgba(76, 59, 59, 0.2);
+            --color-input-placeholder: rgba(76, 59, 59, 0.5);
+            --color-accent: #B76E79; /* 玫瑰金 */
+            --color-particle: '["#B76E79", "#A9A9A9", "#FFFFFF"]'; /* 粒子顏色: 玫瑰金, 灰, 白 */
+            --color-particle-link: "#A9A9A9"; /* 灰色 */
 
             --color-button-shadow-1: rgba(255, 255, 255, 0.1);
             --color-button-shadow-2: rgba(0, 0, 0, 0.3);
@@ -399,7 +399,7 @@
         }
                 
         // --- 4. (GitHub 版) 從 Google Sheet Gviz API 抓取資料 ---
-        // (*** 已修改：支援 7 欄位 ***)
+        // (已修改：支援 7 欄位)
         async function loadToolsFromSheet(url) {
             let response;
             try {
@@ -442,14 +442,14 @@
                         
             const tools = [];
             
-            // *** 修正：Gviz API 似乎會將第一列(標頭)也包含在 rows 裡，所以我們用 slice(1) 來略過它 ***
+            // 修正：Gviz API 似乎會將第一列(標頭)也包含在 rows 裡，所以我們用 slice(1) 來略過它
             const rows = data.table.rows.slice(1); 
 
             rows.forEach((row, index) => {
                 // c[0] 是 A 欄, c[1] 是 B 欄, ...
                 // 檢查 row 和 row.c 是否存在
                 if (row && row.c) {
-                    // *** 這是主要修改處：讀取新欄位 ***
+                    // 這是主要修改處：讀取新欄位
                     const name = row.c[0]?.v;        // A欄: name
                     const description = row.c[1]?.v; // B欄: description
                     const category = row.c[2]?.v;    // C欄: category
@@ -464,7 +464,7 @@
                              console.warn(`第 ${index + 1} 行資料的連結(url1)格式不正確 (非 http): ${url1}`);
                         }
                         
-                        // *** 修改：將所有讀取到的資料存入 tools 陣列 ***
+                        // 修改：將所有讀取到的資料存入 tools 陣列
                         tools.push({
                             name: name,
                             description: description,
@@ -499,7 +499,7 @@
                 // 將類別(陣列)轉換為逗號分隔的字串，存入 data-category
                 card.dataset.category = data.categories.join(',');
                                  
-                // *** 這段邏輯不需要修改，它已經可以處理 url1 和 url2 ***
+                // 這段邏輯不需要修改，它已經可以處理 url1 和 url2
                 let buttonsHTML = '';
                 if (data.url1 && data.url1.startsWith('http')) {
                     // (onDataLoaded 這裡會使用 || '前往應用 →' 作為預設值)
@@ -666,7 +666,7 @@
             };
                         
             // 根據主題設定粒子和連結的顏色
-            // (*** 修改：確保 CSS 變數中的引號被正確解析 ***)
+            // (修改：確保 CSS 變數中的引號被正確解析)
             try {
                 // 獲取當前主題的 CSS 變數 '["..."]' (一個包含單引號的字串)
                 const colorString = getComputedStyle(document.documentElement).getPropertyValue('--color-particle').trim();
@@ -683,8 +683,8 @@
             } catch (e) {
                 console.error("無法解析粒子顏色 CSS 變數: ", e);
                 // 使用備用顏色
-                particlesConfig.particles.color = { value: theme === 'light' ? ["#DAA520", "#808080"] : ["#FFD700", "#C0C0C0"] };
-                particlesConfig.particles.links.color = theme === 'light' ? "#808080" : "#C0C0C0";
+                particlesConfig.particles.color = { value: theme === 'light' ? ["#B76E79", "#A9A9A9"] : ["#FFD700", "#9B59B6"] };
+                particlesConfig.particles.links.color = theme === 'light' ? "#A9A9A9" : "#9B59B6";
             }
                         
             // 檢查 tsParticles 是否已載入
