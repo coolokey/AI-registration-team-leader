@@ -203,7 +203,7 @@
 
     let allBooks = [];
 
-    // 【修改重點】定義分類規則：prefix 改為英文代號
+    // 定義分類規則：prefix 為英文代號
     const CATEGORIES = [
       { id: '7up',   prefix: '7up', title: '七年級 上學期' },
       { id: '7down', prefix: '7down', title: '七年級 下學期' },
@@ -233,7 +233,12 @@
     }
 
     function handleSuccess(data) {
-      allBooks = data;
+      // 【修改重點】加入排序邏輯：依照檔名自然排序 (解決 1, 10, 2 順序問題)
+      // 使用 localeCompare 搭配 numeric: true 可以正確排序數字
+      allBooks = data.sort((a, b) => {
+          return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
       document.getElementById('loader').style.display = 'none';
       renderLibrary(allBooks);
     }
@@ -250,7 +255,7 @@
 
       // 遍歷每一個分類
       CATEGORIES.forEach(category => {
-        // 【修改重點】不分大小寫比對檔名開頭
+        // 不分大小寫比對檔名開頭
         const categoryBooks = books.filter(book => 
             book.name.toLowerCase().startsWith(category.prefix.toLowerCase())
         );
