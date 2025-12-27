@@ -52,53 +52,60 @@
       padding: 0 20px;
     }
 
-    /* 分類標題樣式 */
+    /* 分類區塊 */
     .category-section {
-      margin-bottom: 40px;
+      margin-bottom: 50px; /* 增加分類間距 */
     }
 
+    /* 分類標題 (標籤 Tab) */
     .category-header {
       display: flex;
       align-items: center;
-      margin-bottom: 0px; /* 貼合書架 */
-      padding-left: 10px;
+      margin-bottom: 0px; 
+      padding-left: 20px; /* 標籤左側距離 */
+      position: relative;
+      z-index: 5; /* 關鍵：讓標籤浮在書架邊框之上 */
     }
 
     .category-tag {
       background-color: var(--primary-color);
       color: white;
-      padding: 8px 20px;
-      border-radius: 10px 10px 0 0; /* 上方圓角 */
+      padding: 8px 25px;
+      border-radius: 12px 12px 0 0;
       font-weight: bold;
       font-size: 1.1rem;
       box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
       position: relative;
-      top: 2px; /* 微調接合處 */
+      top: 3px; /* 稍微往下蓋住邊框 */
+      letter-spacing: 1px;
     }
 
+    /* 書架外框 (整個櫃子) */
     .bookshelf { 
       min-height: 100px; 
+      border-top: 10px solid #795548; /* 頂部邊框移到這裡，整個櫃子只有一個頂 */
+      border-radius: 0 10px 0 0;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      background-color: #fcfcfc; /* 書櫃內部背景 */
     }
     
+    /* 每一層 (只有底部層板) */
     .shelf-row {
       display: flex;
       flex-wrap: wrap;
       padding: 0 20px;
-      margin-bottom: 0; /* 緊湊排列 */
-      border-bottom: 25px solid var(--wood-dark);
-      border-top: 10px solid #795548; /* 書架頂部質感 */
+      margin-bottom: 0;
+      border-bottom: 25px solid var(--wood-dark); /* 只有底部木板 */
       position: relative;
-      min-height: 200px;
-      background: linear-gradient(to bottom, #efebe9 0%, rgba(0,0,0,0.05) 100%);
-      box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
-      border-radius: 0 10px 0 0; /* 右上角圓角 */
+      min-height: 210px; /* 稍微加高一點 */
+      background: linear-gradient(to bottom, #f5f3f0 0%, rgba(255,255,255,0) 100%); /* 更柔和的內部陰影 */
     }
     
-    /* 書架陰影與立體感 */
+    /* 書架層板陰影與立體感 */
     .shelf-row::after { 
       content: ''; position: absolute; bottom: -25px; left: -5px; right: -5px; height: 25px; 
-      background-color: var(--wood-light); z-index: -1; border-radius: 0 0 5px 5px; 
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
+      background-color: var(--wood-light); z-index: 1; border-radius: 0 0 5px 5px; 
+      box-shadow: 0 5px 10px rgba(0,0,0,0.2); 
     }
     
     /* 空狀態樣式 */
@@ -109,64 +116,75 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      color: #999;
+      color: #aaa;
       font-size: 1rem;
     }
     .empty-icon {
-        font-size: 2rem;
-        margin-bottom: 10px;
-        opacity: 0.5;
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        opacity: 0.3;
+        color: #8D6E63;
     }
     
     .book {
       width: var(--book-width);
       height: var(--book-height);
-      margin: 15px 15px 0 15px; /* 書本置底 */
+      margin: 15px 15px 0 15px;
       position: relative;
       cursor: pointer;
-      transition: transform 0.3s ease;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       transform-origin: bottom center;
-      align-self: flex-end; /* 讓書本靠齊底部 */
+      align-self: flex-end; /* 讓書本緊貼底部層板 */
+      z-index: 2; /* 確保書本在層板陰影之上 */
     }
     
-    .book:hover { transform: scale(1.05) translateY(-10px); z-index: 10; }
+    .book:hover { transform: scale(1.05) translateY(-5px); z-index: 10; }
     
     .book-cover {
       width: 100%; height: 100%; background-color: #fff;
       border-radius: 2px 4px 4px 2px;
-      box-shadow: inset 3px 0 2px rgba(0,0,0,0.1), 5px 5px 10px rgba(0,0,0,0.3);
+      box-shadow: inset 3px 0 2px rgba(0,0,0,0.05), 3px 3px 8px rgba(0,0,0,0.2);
       overflow: hidden; display: flex; flex-direction: column; position: relative;
+      border: 1px solid #eee; /* 增加細微邊框讓白書更明顯 */
     }
     
     .book-cover::before { 
       content: ''; position: absolute; left: 0; top: 0; bottom: 0; 
-      width: 5px; background: rgba(0,0,0,0.1); z-index: 5; 
+      width: 6px; background: rgba(0,0,0,0.05); z-index: 5; 
+      border-right: 1px solid rgba(0,0,0,0.05);
     }
     
-    .book-img { width: 100%; height: 75%; object-fit: cover; background-color: #eee; }
+    .book-img { width: 100%; height: 75%; object-fit: cover; background-color: #f9f9f9; }
     
     .book-title {
-      padding: 5px 8px; font-size: 0.9rem; font-weight: bold; color: #333;
-      text-align: center; display: -webkit-box; -webkit-line-clamp: 2;
+      padding: 0 10px; 
+      font-size: 0.95rem; 
+      font-weight: 700; 
+      color: #444;
+      text-align: center; 
+      display: -webkit-box; -webkit-line-clamp: 2;
       -webkit-box-orient: vertical; overflow: hidden; background-color: white;
       flex-grow: 1; display: flex; align-items: center; justify-content: center;
+      line-height: 1.3;
     }
     
     .book-actions { 
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-      background: rgba(0,0,0,0.7); display: flex; flex-direction: column; 
+      background: rgba(110, 72, 170, 0.9); /* 改用主題色遮罩 */
+      display: flex; flex-direction: column; 
       justify-content: center; align-items: center; opacity: 0; 
-      transition: opacity 0.3s; gap: 10px; 
+      transition: opacity 0.2s; gap: 12px; 
     }
     
     .book:hover .book-actions { opacity: 1; }
     
     .action-btn { 
-      background-color: white; color: #333; border: none; padding: 8px 16px; 
-      border-radius: 20px; font-size: 0.8rem; font-weight: bold; cursor: pointer; 
-      text-decoration: none; display: flex; align-items: center; gap: 5px; 
+      background-color: white; color: #6e48aa; border: none; padding: 8px 20px; 
+      border-radius: 25px; font-size: 0.9rem; font-weight: bold; cursor: pointer; 
+      text-decoration: none; display: flex; align-items: center; gap: 8px; 
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-    .action-btn:hover { background-color: #f0f0f0; transform: scale(1.05); }
+    .action-btn:hover { background-color: #f8f9fa; transform: scale(1.05); }
     .action-btn.primary { background-color: #ff9800; color: white; }
 
     #loader { text-align: center; padding: 50px; font-size: 1.2rem; color: #666; }
@@ -181,8 +199,8 @@
 <body>
 
   <header>
-    <h1>大貿險家電子書櫃</h1>
-    <div class="subtitle">同事共享教材資源庫</div>
+    <h1>溪中數學自製題庫書櫃</h1>
+    <div class="subtitle">共享教材資源庫</div>
     <div class="search-container">
       <input type="text" id="searchInput" placeholder="搜尋講義名稱..." onkeyup="filterBooks()">
     </div>
@@ -203,7 +221,7 @@
 
     let allBooks = [];
 
-    // 定義分類規則：prefix 為英文代號
+    // 定義分類規則
     const CATEGORIES = [
       { id: '7up',   prefix: '7up', title: '七年級 上學期' },
       { id: '7down', prefix: '7down', title: '七年級 下學期' },
@@ -233,8 +251,7 @@
     }
 
     function handleSuccess(data) {
-      // 【修改重點】加入排序邏輯：依照檔名自然排序 (解決 1, 10, 2 順序問題)
-      // 使用 localeCompare 搭配 numeric: true 可以正確排序數字
+      // 依照檔名自然排序
       allBooks = data.sort((a, b) => {
           return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
       });
@@ -248,19 +265,15 @@
       document.getElementById('loader').innerHTML = `<span style="color:red">連線失敗，請檢查 API 網址或網路狀態。<br><small>${error}</small></span>`;
     }
 
-    // 核心渲染函式
     function renderLibrary(books) {
       const libraryEl = document.getElementById('library');
-      libraryEl.innerHTML = ''; // 清空
+      libraryEl.innerHTML = '';
 
-      // 遍歷每一個分類
       CATEGORIES.forEach(category => {
-        // 不分大小寫比對檔名開頭
         const categoryBooks = books.filter(book => 
             book.name.toLowerCase().startsWith(category.prefix.toLowerCase())
         );
         
-        // 建立該分類的區塊 HTML
         const section = document.createElement('div');
         section.className = 'category-section';
 
@@ -270,27 +283,23 @@
         header.innerHTML = `<div class="category-tag">${category.title}</div>`;
         section.appendChild(header);
 
-        // 書架容器
+        // 書架容器 (包含邊框)
         const bookshelf = document.createElement('div');
         bookshelf.className = 'bookshelf';
 
-        // 判斷是否有書
         if (categoryBooks.length === 0) {
-            // 沒有書：顯示建立中
             const emptyShelf = document.createElement('div');
             emptyShelf.className = 'shelf-row';
             emptyShelf.innerHTML = `
                 <div class="empty-shelf">
-                    <div class="empty-icon"><i class="fas fa-tools"></i></div>
+                    <div class="empty-icon"><i class="fas fa-hammer"></i></div>
                     <div>講義建立中...</div>
                 </div>
             `;
             bookshelf.appendChild(emptyShelf);
         } else {
-            // 有書：進行排列
-            // 計算一行能放幾本
-            const containerWidth = 960; // 容器約略寬度
-            const bookSpace = 280; // 橫式書本寬度含間距
+            const containerWidth = 960; 
+            const bookSpace = 280; 
             let booksPerRow = Math.floor(containerWidth / bookSpace) || 2;
 
             let currentShelfRow = document.createElement('div');
@@ -333,7 +342,6 @@
     function filterBooks() {
       const input = document.getElementById('searchInput');
       const filter = input.value.toLowerCase();
-      
       const filtered = allBooks.filter(book => book.name.toLowerCase().includes(filter));
       renderLibrary(filtered);
     }
