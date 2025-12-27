@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大貿險家電子書櫃</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --wood-dark: #5D4037;
+      --wood-light: #8D6E63;
+      --wall-color: #Fdfbf7;
+      --book-width: 240px;
+      --book-height: 170px;
+    }
+
+    body { margin: 0; padding: 0; background-color: var(--wall-color); font-family: 'Noto Sans TC', sans-serif; color: #333; }
+    
+    header { 
+      background: linear-gradient(135deg, #6e48aa, #9d50bb); 
+      color: white; 
+      padding: 20px; 
+      text-align: center; 
+      position: sticky; 
+      top: 0; 
+      z-index: 100;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    h1 { margin: 0; font-size: 1.8rem; letter-spacing: 2px; }
+    .subtitle { font-size: 0.9rem; opacity: 0.9; margin-top: 5px; }
+    
+    /* 搜尋框樣式優化 */
+    .search-container { margin-top: 15px; }
+    #searchInput {
+      padding: 10px 15px;
+      border-radius: 20px;
+      border: none;
+      width: 90%;
+      max-width: 400px;
+      font-size: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      outline: none;
+    }
+
+    .bookshelf { max-width: 1000px; margin: 40px auto; padding: 0 20px; min-height: 300px; }
+    
+    .shelf-row {
+      display: flex;
+      flex-wrap: wrap;
+      padding: 0 20px;
+      margin-bottom: 50px;
+      border-bottom: 25px solid var(--wood-dark);
+      position: relative;
+      min-height: 200px;
+      background: linear-gradient(to bottom, transparent 95%, rgba(0,0,0,0.3) 100%);
+    }
+    
+    .shelf-row::after { 
+      content: ''; position: absolute; bottom: -25px; left: -10px; right: -10px; height: 25px; 
+      background-color: var(--wood-light); z-index: -1; border-radius: 0 0 5px 5px; 
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3); 
+    }
+    
+    .book {
+      width: var(--book-width);
+      height: var(--book-height);
+      margin: 0 15px;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+      transform-origin: bottom center;
+    }
+    
+    .book:hover { transform: scale(1.05) translateY(-10px); z-index: 10; }
+    
+    .book-cover {
+      width: 100%; height: 100%; background-color: #fff;
+      border-radius: 2px 4px 4px 2px;
+      box-shadow: inset 3px 0 2px rgba(0,0,0,0.1), 5px 5px 10px rgba(0,0,0,0.3);
+      overflow: hidden; display: flex; flex-direction: column; position: relative;
+    }
+    
+    .book-cover::before { 
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; 
+      width: 5px; background: rgba(0,0,0,0.1); z-index: 5; 
+    }
+    
+    .book-img { width: 100%; height: 75%; object-fit: cover; background-color: #eee; }
+    
+    .book-title {
+      padding: 5px 8px; font-size: 0.9rem; font-weight: bold; color: #333;
+      text-align: center; display: -webkit-box; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden; background-color: white;
+      flex-grow: 1; display: flex; align-items: center; justify-content: center;
+    }
+    
+    .book-actions { 
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(0,0,0,0.7); display: flex; flex-direction: column; 
+      justify-content: center; align-items: center; opacity: 0; 
+      transition: opacity 0.3s; gap: 10px; 
+    }
+    
+    .book:hover .book-actions { opacity: 1; }
+    
+    .action-btn { 
+      background-color: white; color: #333; border: none; padding: 8px 16px; 
+      border-radius: 20px; font-size: 0.8rem; font-weight: bold; cursor: pointer; 
+      text-decoration: none; display: flex; align-items: center; gap: 5px; 
+    }
+    .action-btn:hover { background-color: #f0f0f0; transform: scale(1.05); }
+    .action-btn.primary { background-color: #ff9800; color: white; }
+
+    #loader { text-align: center; padding: 50px; font-size: 1.2rem; color: #666; }
+    .spinner {
+      display: inline-block; width: 40px; height: 40px;
+      border: 4px solid rgba(0,0,0,0.1); border-left-color: #9d50bb;
+      border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>大貿險家電子書櫃</h1>
+    <div class="subtitle">同事共享教材資源庫</div>
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="搜尋講義名稱..." onkeyup="filterBooks()">
+    </div>
+  </header>
+
+  <div id="loader">
+    <div class="spinner"></div>
+    <div>正在連線至雲端書庫...</div>
+  </div>
+
+  <div id="bookshelf" class="bookshelf"></div>
+
+  <script>
+    // ==========================================
+    // 請將下方的網址替換成您的 GAS 網頁應用程式網址
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzw4nszdLHV3UZNW2190aybFFfacWmfY1c8dtP5B_-35Wylkd2LQ8aJEMS5VcFJSTPr-g/exec"; 
+    // ==========================================
+
+    let allBooks = [];
+
+    window.onload = function() {
+      fetchBooks();
+    };
+
+    function fetchBooks() {
+      // 檢查是否已設定 API
+      if (GAS_API_URL.includes("請在此貼上")) {
+          document.getElementById('loader').innerHTML = `<span style="color:red">請先在程式碼中設定 GAS API 網址</span>`;
+          return;
+      }
+
+      fetch(GAS_API_URL)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                handleError(data.error);
+            } else {
+                handleSuccess(data);
+            }
+        })
+        .catch(error => {
+            handleError(error);
+        });
+    }
+
+    function handleSuccess(data) {
+      const books = data;
+      allBooks = books; // 儲存供搜尋使用
+
+      if (!books || books.length === 0) {
+          document.getElementById('loader').style.display = 'none';
+          document.getElementById('bookshelf').innerHTML = '<div style="text-align:center; padding:50px; color:#888;">目前書架上空空的喔！</div>';
+          return;
+      }
+
+      renderBooks(books);
+    }
+
+    function handleError(error) {
+      console.error(error);
+      document.getElementById('loader').innerHTML = `<span style="color:red">連線失敗，請檢查 API 網址或網路狀態。<br><small>${error}</small></span>`;
+    }
+
+    function renderBooks(books) {
+      document.getElementById('loader').style.display = 'none';
+      const shelf = document.getElementById('bookshelf');
+      shelf.innerHTML = '';
+
+      const containerWidth = shelf.offsetWidth || 800;
+      const bookSpace = 280; // 橫式書本寬度含間距
+      let booksPerRow = Math.floor(containerWidth / bookSpace) || 2;
+      
+      let currentShelfRow = document.createElement('div');
+      currentShelfRow.className = 'shelf-row';
+      shelf.appendChild(currentShelfRow);
+
+      books.forEach((book, i) => {
+        if (i > 0 && i % booksPerRow === 0) {
+           currentShelfRow = document.createElement('div');
+           currentShelfRow.className = 'shelf-row';
+           shelf.appendChild(currentShelfRow);
+        }
+        
+        const div = document.createElement('div');
+        div.className = 'book';
+        const thumb = (book.thumbnail && book.thumbnail.length > 10) ? book.thumbnail : 'https://via.placeholder.com/240x170?text=PDF';
+
+        div.innerHTML = `
+          <div class="book-cover">
+            <img src="${thumb}" class="book-img" onerror="this.src='https://via.placeholder.com/240x170?text=Cover'">
+            <div class="book-title">${book.name}</div>
+            <div class="book-actions">
+              <a href="${book.url}" target="_blank" class="action-btn primary"><i class="fas fa-eye"></i> 預覽</a>
+              <a href="${book.downloadUrl}" class="action-btn"><i class="fas fa-download"></i> 下載</a>
+            </div>
+          </div>
+        `;
+        currentShelfRow.appendChild(div);
+      });
+    }
+    
+    function filterBooks() {
+      const input = document.getElementById('searchInput');
+      const filter = input.value.toLowerCase();
+      const filtered = allBooks.filter(book => book.name.toLowerCase().includes(filter));
+      
+      // 重新渲染但不顯示 Loader
+      const shelf = document.getElementById('bookshelf');
+      if (filtered.length === 0) {
+          shelf.innerHTML = '<div style="text-align:center; padding:50px;">找不到相關講義...</div>';
+      } else {
+          renderBooks(filtered);
+      }
+    }
+  </script>
+</body>
+</html>
