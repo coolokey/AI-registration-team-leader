@@ -14,6 +14,7 @@
       --wall-color: #Fdfbf7;
       --book-width: 240px;
       --book-height: 170px;
+      --primary-color: #6e48aa;
     }
 
     body { margin: 0; padding: 0; background-color: var(--wall-color); font-family: 'Noto Sans TC', sans-serif; color: #333; }
@@ -32,7 +33,6 @@
     h1 { margin: 0; font-size: 1.8rem; letter-spacing: 2px; }
     .subtitle { font-size: 0.9rem; opacity: 0.9; margin-top: 5px; }
     
-    /* 搜尋框樣式優化 */
     .search-container { margin-top: 15px; }
     #searchInput {
       padding: 10px 15px;
@@ -45,33 +45,88 @@
       outline: none;
     }
 
-    .bookshelf { max-width: 1000px; margin: 40px auto; padding: 0 20px; min-height: 300px; }
+    /* 書櫃總容器 */
+    .library-container {
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+
+    /* 分類標題樣式 */
+    .category-section {
+      margin-bottom: 40px;
+    }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0px; /* 貼合書架 */
+      padding-left: 10px;
+    }
+
+    .category-tag {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 10px 10px 0 0; /* 上方圓角 */
+      font-weight: bold;
+      font-size: 1.1rem;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+      position: relative;
+      top: 2px; /* 微調接合處 */
+    }
+
+    .bookshelf { 
+      min-height: 100px; 
+    }
     
     .shelf-row {
       display: flex;
       flex-wrap: wrap;
       padding: 0 20px;
-      margin-bottom: 50px;
+      margin-bottom: 0; /* 緊湊排列 */
       border-bottom: 25px solid var(--wood-dark);
+      border-top: 10px solid #795548; /* 書架頂部質感 */
       position: relative;
       min-height: 200px;
-      background: linear-gradient(to bottom, transparent 95%, rgba(0,0,0,0.3) 100%);
+      background: linear-gradient(to bottom, #efebe9 0%, rgba(0,0,0,0.05) 100%);
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+      border-radius: 0 10px 0 0; /* 右上角圓角 */
     }
     
+    /* 書架陰影與立體感 */
     .shelf-row::after { 
-      content: ''; position: absolute; bottom: -25px; left: -10px; right: -10px; height: 25px; 
+      content: ''; position: absolute; bottom: -25px; left: -5px; right: -5px; height: 25px; 
       background-color: var(--wood-light); z-index: -1; border-radius: 0 0 5px 5px; 
-      box-shadow: 0 10px 20px rgba(0,0,0,0.3); 
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
+    }
+    
+    /* 空狀態樣式 */
+    .empty-shelf {
+      width: 100%;
+      height: 200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #999;
+      font-size: 1rem;
+    }
+    .empty-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        opacity: 0.5;
     }
     
     .book {
       width: var(--book-width);
       height: var(--book-height);
-      margin: 0 15px;
+      margin: 15px 15px 0 15px; /* 書本置底 */
       position: relative;
       cursor: pointer;
       transition: transform 0.3s ease;
       transform-origin: bottom center;
+      align-self: flex-end; /* 讓書本靠齊底部 */
     }
     
     .book:hover { transform: scale(1.05) translateY(-10px); z-index: 10; }
@@ -138,27 +193,31 @@
     <div>正在連線至雲端書庫...</div>
   </div>
 
-  <div id="bookshelf" class="bookshelf"></div>
+  <div id="library" class="library-container"></div>
 
   <script>
     // ==========================================
-    // 請將下方的網址替換成您的 GAS 網頁應用程式網址
+    // GAS API 網址 (請確認是否與您部署的一致)
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzw4nszdLHV3UZNW2190aybFFfacWmfY1c8dtP5B_-35Wylkd2LQ8aJEMS5VcFJSTPr-g/exec"; 
     // ==========================================
 
     let allBooks = [];
+
+    // 【修改重點】定義分類規則：prefix 改為英文代號
+    const CATEGORIES = [
+      { id: '7up',   prefix: '7up', title: '七年級 上學期' },
+      { id: '7down', prefix: '7down', title: '七年級 下學期' },
+      { id: '8up',   prefix: '8up', title: '八年級 上學期' },
+      { id: '8down', prefix: '8down', title: '八年級 下學期' },
+      { id: '9up',   prefix: '9up', title: '九年級 上學期' },
+      { id: '9down', prefix: '9down', title: '九年級 下學期' }
+    ];
 
     window.onload = function() {
       fetchBooks();
     };
 
     function fetchBooks() {
-      // 檢查是否已設定 API
-      if (GAS_API_URL.includes("請在此貼上")) {
-          document.getElementById('loader').innerHTML = `<span style="color:red">請先在程式碼中設定 GAS API 網址</span>`;
-          return;
-      }
-
       fetch(GAS_API_URL)
         .then(response => response.json())
         .then(data => {
@@ -174,16 +233,9 @@
     }
 
     function handleSuccess(data) {
-      const books = data;
-      allBooks = books; // 儲存供搜尋使用
-
-      if (!books || books.length === 0) {
-          document.getElementById('loader').style.display = 'none';
-          document.getElementById('bookshelf').innerHTML = '<div style="text-align:center; padding:50px; color:#888;">目前書架上空空的喔！</div>';
-          return;
-      }
-
-      renderBooks(books);
+      allBooks = data;
+      document.getElementById('loader').style.display = 'none';
+      renderLibrary(allBooks);
     }
 
     function handleError(error) {
@@ -191,56 +243,94 @@
       document.getElementById('loader').innerHTML = `<span style="color:red">連線失敗，請檢查 API 網址或網路狀態。<br><small>${error}</small></span>`;
     }
 
-    function renderBooks(books) {
-      document.getElementById('loader').style.display = 'none';
-      const shelf = document.getElementById('bookshelf');
-      shelf.innerHTML = '';
+    // 核心渲染函式
+    function renderLibrary(books) {
+      const libraryEl = document.getElementById('library');
+      libraryEl.innerHTML = ''; // 清空
 
-      const containerWidth = shelf.offsetWidth || 800;
-      const bookSpace = 280; // 橫式書本寬度含間距
-      let booksPerRow = Math.floor(containerWidth / bookSpace) || 2;
-      
-      let currentShelfRow = document.createElement('div');
-      currentShelfRow.className = 'shelf-row';
-      shelf.appendChild(currentShelfRow);
-
-      books.forEach((book, i) => {
-        if (i > 0 && i % booksPerRow === 0) {
-           currentShelfRow = document.createElement('div');
-           currentShelfRow.className = 'shelf-row';
-           shelf.appendChild(currentShelfRow);
-        }
+      // 遍歷每一個分類
+      CATEGORIES.forEach(category => {
+        // 【修改重點】不分大小寫比對檔名開頭
+        const categoryBooks = books.filter(book => 
+            book.name.toLowerCase().startsWith(category.prefix.toLowerCase())
+        );
         
-        const div = document.createElement('div');
-        div.className = 'book';
-        const thumb = (book.thumbnail && book.thumbnail.length > 10) ? book.thumbnail : 'https://via.placeholder.com/240x170?text=PDF';
+        // 建立該分類的區塊 HTML
+        const section = document.createElement('div');
+        section.className = 'category-section';
 
-        div.innerHTML = `
-          <div class="book-cover">
-            <img src="${thumb}" class="book-img" onerror="this.src='https://via.placeholder.com/240x170?text=Cover'">
-            <div class="book-title">${book.name}</div>
-            <div class="book-actions">
-              <a href="${book.url}" target="_blank" class="action-btn primary"><i class="fas fa-eye"></i> 預覽</a>
-              <a href="${book.downloadUrl}" class="action-btn"><i class="fas fa-download"></i> 下載</a>
-            </div>
-          </div>
-        `;
-        currentShelfRow.appendChild(div);
+        // 標題
+        const header = document.createElement('div');
+        header.className = 'category-header';
+        header.innerHTML = `<div class="category-tag">${category.title}</div>`;
+        section.appendChild(header);
+
+        // 書架容器
+        const bookshelf = document.createElement('div');
+        bookshelf.className = 'bookshelf';
+
+        // 判斷是否有書
+        if (categoryBooks.length === 0) {
+            // 沒有書：顯示建立中
+            const emptyShelf = document.createElement('div');
+            emptyShelf.className = 'shelf-row';
+            emptyShelf.innerHTML = `
+                <div class="empty-shelf">
+                    <div class="empty-icon"><i class="fas fa-tools"></i></div>
+                    <div>講義建立中...</div>
+                </div>
+            `;
+            bookshelf.appendChild(emptyShelf);
+        } else {
+            // 有書：進行排列
+            // 計算一行能放幾本
+            const containerWidth = 960; // 容器約略寬度
+            const bookSpace = 280; // 橫式書本寬度含間距
+            let booksPerRow = Math.floor(containerWidth / bookSpace) || 2;
+
+            let currentShelfRow = document.createElement('div');
+            currentShelfRow.className = 'shelf-row';
+            bookshelf.appendChild(currentShelfRow);
+
+            categoryBooks.forEach((book, i) => {
+                if (i > 0 && i % booksPerRow === 0) {
+                   currentShelfRow = document.createElement('div');
+                   currentShelfRow.className = 'shelf-row';
+                   bookshelf.appendChild(currentShelfRow);
+                }
+                currentShelfRow.appendChild(createBookElement(book));
+            });
+        }
+
+        section.appendChild(bookshelf);
+        libraryEl.appendChild(section);
       });
+    }
+
+    function createBookElement(book) {
+      const div = document.createElement('div');
+      div.className = 'book';
+      const thumb = (book.thumbnail && book.thumbnail.length > 10) ? book.thumbnail : 'https://via.placeholder.com/240x170?text=PDF';
+
+      div.innerHTML = `
+        <div class="book-cover">
+          <img src="${thumb}" class="book-img" onerror="this.src='https://via.placeholder.com/240x170?text=Cover'">
+          <div class="book-title">${book.name}</div>
+          <div class="book-actions">
+            <a href="${book.url}" target="_blank" class="action-btn primary"><i class="fas fa-eye"></i> 預覽</a>
+            <a href="${book.downloadUrl}" class="action-btn"><i class="fas fa-download"></i> 下載</a>
+          </div>
+        </div>
+      `;
+      return div;
     }
     
     function filterBooks() {
       const input = document.getElementById('searchInput');
       const filter = input.value.toLowerCase();
-      const filtered = allBooks.filter(book => book.name.toLowerCase().includes(filter));
       
-      // 重新渲染但不顯示 Loader
-      const shelf = document.getElementById('bookshelf');
-      if (filtered.length === 0) {
-          shelf.innerHTML = '<div style="text-align:center; padding:50px;">找不到相關講義...</div>';
-      } else {
-          renderBooks(filtered);
-      }
+      const filtered = allBooks.filter(book => book.name.toLowerCase().includes(filter));
+      renderLibrary(filtered);
     }
   </script>
 </body>
