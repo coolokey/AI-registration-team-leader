@@ -20,7 +20,6 @@
         body {
             font-family: 'Noto Sans TC', sans-serif;
         }
-        /* 自定義動畫設定 */
         @keyframes bounce-slow {
             0%, 100% { transform: translateY(-5%); }
             50% { transform: translateY(5%); }
@@ -36,7 +35,6 @@
     <script type="text/babel">
         const { useState, useRef } = React;
 
-        // --- 內建圖示元件 (取代外部 Lucide 載入，解決錯誤) ---
         const IconBase = ({ size = 24, color = "currentColor", fill = "none", strokeWidth = 2, className, children, ...props }) => (
             <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -90,18 +88,23 @@
                 <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
             </IconBase>
         );
-        // -------------------------------------------------------
+        const AlertCircle = (props) => (
+            <IconBase {...props}>
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </IconBase>
+        );
 
         const App = () => {
             const [submitted, setSubmitted] = useState(false);
             const [loading, setLoading] = useState(false);
             const [selectedName, setSelectedName] = useState(""); 
+            const [error, setError] = useState("");
+            // 用來儲存選取的選項狀態，以實作「再點一次取消」的功能
+            const [selections, setSelections] = useState({});
             const formRef = useRef(null);
 
-            // Google Form Configuration
             const formAction = "https://docs.google.com/forms/u/0/d/e/1FAIpQLSdvmozSzw3saI5VVDKn6Ju-mcDa_oWGAY6Zn7PrYjS9TDkQQQ/formResponse";
 
-            // 欄位對應 ID
             const entryIds = {
                 name: "entry.146249068",
                 drink_426: "entry.1170772669",
@@ -113,7 +116,6 @@
                 note: "entry.1627990010"
             };
 
-            // 姓名選單
             const nameOptions = [
                 "校  長 林晏瑄", "教務主任 韓美瑛", "學務主任 鄭舒文", "總務主任 黃文昌", 
                 "輔導主任 游家興", "教學組長 李昱瑩", "註冊組長 游貿仁", "設備組長 吳美青",
@@ -129,7 +131,6 @@
                 "工   友 江玉霞", "最強特攻隊 『童軍團』", "教務處工讀生"
             ];
 
-            // 飲料選項與圖片
             const drinkOptions = [
                 { label: "溫咖啡", image: "https://lh7-rt.googleusercontent.com/formsz/AN7BsVDNPpnNYURFKQJxRl4vPYF_0pvzW3HmX1-0FskmJrZlLQ18uFECXS-aglBskLM9tLRwT4FEaHDCgUAMCLZ4Iw_RyBipd14HRX1qvfukBP4XPDsOBoUTjWO1Vle3EF-SHuOjwuiMqDb54t9QCYrEqnCpdPG9qsgBgztWRalY73Hq-0g4K7cUQwaJEbtrBBzaBcFWNVQVteSEluU=w260?key=U8cCYUZ5_RiyVqm94794qg" },
                 { label: "溫奶茶", image: "https://lh7-rt.googleusercontent.com/formsz/AN7BsVAQUvj78gZR-CIGUz4Y4DWRpLK3ThY3tlTwLabPcU24X1qQ4OGlDo2sixBgAjbU4fxm32bUBGAm8SKZwuBiZc9elcqwCA-JPaz9WAG_kVvQjGipx6MXm6voSbSk7ExJO1eXLupTPxSU_Ho_Ed6EHGOuE2quYi3MqRsjv4ap4XdLzZAal-eMhLHRxKCsaSZTAV6CmGPT8egYOBJ_=w260?key=U8cCYUZ5_RiyVqm94794qg" },
@@ -137,7 +138,6 @@
                 { label: "冰紅茶(去冰)", image: "https://lh7-rt.googleusercontent.com/formsz/AN7BsVBr-_vEgE7OzPLr8CeC_NzPasi1QERC07TnGgM4ojvi8LgvwLyt1H3qt2qTpYyqsaqctiKB0a8IumVaDxiVB-IEvct2AjIIM9EFUlu2MAszIfT4mRRKF-QqvmnHyqBeScsi2iUCYuXHv8lKPIvJ8Tmrzll4mC2AjhMvJ_w4T59Y39USjsdfk2wp9rrocnhA0EiSjX-476R8Mbk=w121?key=U8cCYUZ5_RiyVqm94794qg" }
             ];
             
-            // 餐點選項與圖片
             const foodOptions = [
                 { label: "無敵豬肉滿福堡加蛋", image: "https://lh7-rt.googleusercontent.com/formsz/AN7BsVBa3OMbILlpayyPYSh0lP3RcyhsVLJGex_dcV5sCJ7KWsXPEM-VYoJVvHSnJDmOfKds7DYmM5kjcnpW0j_j5j7KbIYNiRxb_k6Qo4g5DdBwexTTKF7hsSSVdu6uB4y5r08ljYGzeCSiSO-D2qIHRf2ueFykoSs2D_n-qP9gRMMhYCZYQYqbImmNR3qnH2wIOkY6WYW8pytwEK6h=w212?key=U8cCYUZ5_RiyVqm94794qg" },
                 { label: "豬肉滿福堡加蛋", image: "https://lh7-rt.googleusercontent.com/formsz/AN7BsVA80p2b-JY9b8Pq77PYS_uprRz9fo78S8-fI46v22FLO24OGrJPPup0FloDJtG_pNy6bdW-43F4MIuaF9qQoHc63Tcz7xN_zSiULnB-Su9_o6w0K3Wq2qrLzGZhUp4x_IipstvaHKMqJjbLGVqxioDDFvnSiVHqNgTlJqd7Ra87taNKMpD6ZzKEBX7nv8cFck-1XvH0mav8OHc=w186?key=U8cCYUZ5_RiyVqm94794qg" },
@@ -149,9 +149,30 @@
                 { label: "吉事蛋堡", image: "https://lh7-rt.googleusercontent.com/formsz/AN7BsVAYnPG-bkfutLwY4STZ0sVzL6mg-hJKBX0rwTFP95i9VjdQuEIiWYJ8QkA9-ggQ5Q5hkARb2fi5Wl-mIa-qZQbYAaLjhdOmpl8D1wIzIpPo_lCdPBFOw_aBhE_UEaLI2bxQIEdkG-cSMooNhJtkWOAMQOG3wJMy3c6nHXaTWxohHdnXyM6Ric_Hds5Ub6p4UrjAp7NTqSqnCv55=w155?key=U8cCYUZ5_RiyVqm94794qg" }
             ];
 
+            // 實作取消選取的邏輯
+            const handleToggleSelection = (name, value) => {
+                setSelections(prev => ({
+                    ...prev,
+                    [name]: prev[name] === value ? undefined : value
+                }));
+            };
+
             const handleSubmit = (e) => {
-                setLoading(true);
                 const formData = new FormData(e.target);
+                
+                // 驗證邏輯：檢查是否有任何一天同時選了飲料與餐點
+                const hasDay426 = formData.get(entryIds.drink_426) && formData.get(entryIds.food_426);
+                const hasDay516 = formData.get(entryIds.drink_516) && formData.get(entryIds.food_516);
+                const hasDay517 = formData.get(entryIds.drink_517) && formData.get(entryIds.food_517);
+
+                if (!(hasDay426 || hasDay516 || hasDay517)) {
+                    e.preventDefault(); // 阻擋表單提交
+                    setError("請至少選擇一天的餐點（需包含飲料與餐點主食）");
+                    return;
+                }
+
+                setLoading(true);
+                setError("");
                 const name = formData.get(entryIds.name);
                 setSelectedName(name);
 
@@ -228,9 +249,8 @@
 
             return (
                 <div className="min-h-screen bg-[#f3f4f6] pb-12 font-sans selection:bg-orange-300 relative">
-                    <iframe name="hidden_iframe" id="hidden_iframe" style={{ display: 'none' }} onLoad={() => {}}></iframe>
+                    <iframe name="hidden_iframe" id="hidden_iframe" style={{ display: 'none' }}></iframe>
 
-                    {/* Header Banner */}
                     <div className="bg-orange-500 border-b-8 border-black pt-16 pb-20 px-4 relative overflow-hidden">
                         <ShenronSVG />
                         
@@ -314,7 +334,7 @@
                                 </div>
                             </section>
 
-                            {/* 三天餐點動態卡片 */}
+                            {/* 三天餐點卡片 */}
                             {[
                                 { date: "4/26 (日)", drinkKey: "drink_426", foodKey: "food_426", stars: 2 },
                                 { date: "5/16 (六)", drinkKey: "drink_516", foodKey: "food_516", stars: 3 },
@@ -328,7 +348,7 @@
                                         <h2 className="text-2xl font-black text-black">{day.date} 選餐</h2>
                                     </div>
 
-                                    {/* 飲料選擇區 */}
+                                    {/* 飲料選擇 */}
                                     <div className="mb-8 relative z-10">
                                         <h3 className="text-lg font-black text-gray-800 mb-4 flex items-center border-l-8 border-orange-500 pl-3">
                                             <Coffee size={24} className="mr-2 text-orange-600" /> 選擇飲料
@@ -340,7 +360,9 @@
                                                         type="radio" 
                                                         name={entryIds[day.drinkKey]} 
                                                         value={option.label} 
-                                                        required
+                                                        checked={selections[entryIds[day.drinkKey]] === option.label}
+                                                        onClick={() => handleToggleSelection(entryIds[day.drinkKey], option.label)}
+                                                        onChange={() => {}} // 避免 React 警告
                                                         className="peer sr-only"
                                                     />
                                                     <div className="h-full border-4 border-gray-200 rounded-xl overflow-hidden transition-all peer-checked:border-orange-500 peer-checked:bg-orange-50 peer-checked:shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:border-gray-400 bg-white flex flex-col">
@@ -364,7 +386,7 @@
                                         </div>
                                     </div>
 
-                                    {/* 餐點選擇區 */}
+                                    {/* 餐點選擇 */}
                                     <div className="relative z-10">
                                         <h3 className="text-lg font-black text-gray-800 mb-4 flex items-center border-l-8 border-orange-500 pl-3">
                                             <Utensils size={24} className="mr-2 text-orange-600" /> 選擇餐點
@@ -376,7 +398,9 @@
                                                         type="radio" 
                                                         name={entryIds[day.foodKey]} 
                                                         value={option.label} 
-                                                        required
+                                                        checked={selections[entryIds[day.foodKey]] === option.label}
+                                                        onClick={() => handleToggleSelection(entryIds[day.foodKey], option.label)}
+                                                        onChange={() => {}} // 避免 React 警告
                                                         className="peer sr-only"
                                                     />
                                                     <div className="h-full border-4 border-gray-200 rounded-xl overflow-hidden transition-all peer-checked:border-orange-500 peer-checked:bg-orange-50 peer-checked:shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:border-gray-400 bg-white flex flex-col">
@@ -421,8 +445,15 @@
                                 </label>
                             </section>
 
-                            {/* 提交按鈕 */}
+                            {/* 提交按鈕與驗證提示 */}
                             <div className="text-center pt-6 pb-12">
+                                {error && (
+                                    <div className="mb-4 inline-flex items-center bg-red-100 border-2 border-red-600 text-red-600 px-4 py-2 rounded-lg font-bold animate-bounce-slow">
+                                        <AlertCircle size={20} className="mr-2" />
+                                        {error}
+                                    </div>
+                                )}
+                                
                                 <button 
                                     type="submit" 
                                     disabled={loading}
@@ -445,12 +476,11 @@
                                     )}
                                     <div className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
                                 </button>
-                                <p className="mt-4 text-gray-500 font-bold">請確認所有欄位均已選取，送出後將無法自行修改</p>
+                                <p className="mt-4 text-gray-500 font-bold">請確保您欲用餐的那天「飲料」與「主食」皆已勾選，送出後將無法自行修改</p>
                             </div>
                         </form>
                     </div>
 
-                    {/* Footer */}
                     <footer className="mt-8 py-8 text-center text-gray-600 font-bold bg-white/50 border-t-4 border-black">
                         <p>© 115學年度 大溪國中教務處 敬上</p>
                         <div className="flex justify-center mt-4 space-x-2">
@@ -467,6 +497,4 @@
         root.render(<App />);
     </script>
 </body>
-
 </html>
-
