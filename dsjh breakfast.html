@@ -99,7 +99,6 @@
             const [loading, setLoading] = useState(false);
             const [selectedName, setSelectedName] = useState(""); 
             const [error, setError] = useState("");
-            // 用來儲存選取的選項狀態，以實作「再點一次取消」的功能
             const [selections, setSelections] = useState({});
             const formRef = useRef(null);
 
@@ -116,6 +115,7 @@
                 note: "entry.1627990010"
             };
 
+            // 重新校對並清理姓名選項的空格
             const nameOptions = [
                 "校  長 林晏瑄", "教務主任 韓美瑛", "學務主任 鄭舒文", "總務主任 黃文昌", 
                 "輔導主任 游家興", "教學組長 李昱瑩", "註冊組長 游貿仁", "設備組長 吳美青",
@@ -149,7 +149,6 @@
                 { label: "吉事蛋堡", image: "https://lh7-rt.googleusercontent.com/formsz/AN7BsVAYnPG-bkfutLwY4STZ0sVzL6mg-hJKBX0rwTFP95i9VjdQuEIiWYJ8QkA9-ggQ5Q5hkARb2fi5Wl-mIa-qZQbYAaLjhdOmpl8D1wIzIpPo_lCdPBFOw_aBhE_UEaLI2bxQIEdkG-cSMooNhJtkWOAMQOG3wJMy3c6nHXaTWxohHdnXyM6Ric_Hds5Ub6p4UrjAp7NTqSqnCv55=w155?key=U8cCYUZ5_RiyVqm94794qg" }
             ];
 
-            // 實作取消選取的邏輯
             const handleToggleSelection = (name, value) => {
                 setSelections(prev => ({
                     ...prev,
@@ -159,14 +158,12 @@
 
             const handleSubmit = (e) => {
                 const formData = new FormData(e.target);
-                
-                // 驗證邏輯：檢查是否有任何一天同時選了飲料與餐點
                 const hasDay426 = formData.get(entryIds.drink_426) && formData.get(entryIds.food_426);
                 const hasDay516 = formData.get(entryIds.drink_516) && formData.get(entryIds.food_516);
                 const hasDay517 = formData.get(entryIds.drink_517) && formData.get(entryIds.food_517);
 
                 if (!(hasDay426 || hasDay516 || hasDay517)) {
-                    e.preventDefault(); // 阻擋表單提交
+                    e.preventDefault();
                     setError("請至少選擇一天的餐點（需包含飲料與餐點主食）");
                     return;
                 }
@@ -307,13 +304,11 @@
                             onSubmit={handleSubmit}
                             className="space-y-8"
                         >
-                            {/* 基本資訊區塊 */}
                             <section className="bg-white border-4 border-black rounded-3xl p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)]">
                                 <div className="flex items-center mb-6">
                                     <DragonBallIcon count={1} />
                                     <h2 className="text-2xl font-black text-black">基本資訊</h2>
                                 </div>
-                                
                                 <div className="space-y-4">
                                     <label className="block">
                                         <span className="text-gray-700 font-black mb-2 flex items-center">
@@ -334,7 +329,6 @@
                                 </div>
                             </section>
 
-                            {/* 三天餐點卡片 */}
                             {[
                                 { date: "4/26 (日)", drinkKey: "drink_426", foodKey: "food_426", stars: 2 },
                                 { date: "5/16 (六)", drinkKey: "drink_516", foodKey: "food_516", stars: 3 },
@@ -342,13 +336,10 @@
                             ].map((day, idx) => (
                                 <section key={idx} className="bg-white border-4 border-black rounded-3xl p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 transform translate-x-12 -translate-y-12 rotate-45 border-b-4 border-l-4 border-black z-0"></div>
-                                    
                                     <div className="flex items-center mb-6 relative z-10">
                                         <DragonBallIcon count={day.stars} />
                                         <h2 className="text-2xl font-black text-black">{day.date} 選餐</h2>
                                     </div>
-
-                                    {/* 飲料選擇 */}
                                     <div className="mb-8 relative z-10">
                                         <h3 className="text-lg font-black text-gray-800 mb-4 flex items-center border-l-8 border-orange-500 pl-3">
                                             <Coffee size={24} className="mr-2 text-orange-600" /> 選擇飲料
@@ -362,7 +353,7 @@
                                                         value={option.label} 
                                                         checked={selections[entryIds[day.drinkKey]] === option.label}
                                                         onClick={() => handleToggleSelection(entryIds[day.drinkKey], option.label)}
-                                                        onChange={() => {}} // 避免 React 警告
+                                                        onChange={() => {}} 
                                                         className="peer sr-only"
                                                     />
                                                     <div className="h-full border-4 border-gray-200 rounded-xl overflow-hidden transition-all peer-checked:border-orange-500 peer-checked:bg-orange-50 peer-checked:shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:border-gray-400 bg-white flex flex-col">
@@ -385,8 +376,6 @@
                                             ))}
                                         </div>
                                     </div>
-
-                                    {/* 餐點選擇 */}
                                     <div className="relative z-10">
                                         <h3 className="text-lg font-black text-gray-800 mb-4 flex items-center border-l-8 border-orange-500 pl-3">
                                             <Utensils size={24} className="mr-2 text-orange-600" /> 選擇餐點
@@ -400,7 +389,7 @@
                                                         value={option.label} 
                                                         checked={selections[entryIds[day.foodKey]] === option.label}
                                                         onClick={() => handleToggleSelection(entryIds[day.foodKey], option.label)}
-                                                        onChange={() => {}} // 避免 React 警告
+                                                        onChange={() => {}} 
                                                         className="peer sr-only"
                                                     />
                                                     <div className="h-full border-4 border-gray-200 rounded-xl overflow-hidden transition-all peer-checked:border-orange-500 peer-checked:bg-orange-50 peer-checked:shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:border-gray-400 bg-white flex flex-col">
@@ -426,7 +415,6 @@
                                 </section>
                             ))}
 
-                            {/* 備註區塊 */}
                             <section className="bg-white border-4 border-black rounded-3xl p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)]">
                                 <div className="flex items-center mb-6">
                                     <DragonBallIcon count={7} />
@@ -445,7 +433,6 @@
                                 </label>
                             </section>
 
-                            {/* 提交按鈕與驗證提示 */}
                             <div className="text-center pt-6 pb-12">
                                 {error && (
                                     <div className="mb-4 inline-flex items-center bg-red-100 border-2 border-red-600 text-red-600 px-4 py-2 rounded-lg font-bold animate-bounce-slow">
@@ -453,7 +440,6 @@
                                         {error}
                                     </div>
                                 )}
-                                
                                 <button 
                                     type="submit" 
                                     disabled={loading}
