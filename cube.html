@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Puti-AI 3D魔方抽籤器 (PRO版)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+
+        :root {
+            --bg-color: #051020;
+            --text-color: #ffffff;
+            --btn-bg: linear-gradient(135deg, #00c6ff, #0072ff);
+            --modal-bg: rgba(12, 28, 46, 0.95);
+            --card-bg: #fff;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Noto Sans TC', sans-serif;
+            color: var(--text-color);
+            user-select: none;
+            background-color: #051020;
+            /* 防止手機下拉重整 */
+            overscroll-behavior: none; 
+        }
+
+        /* --- 背景與氛圍 --- */
+        #fixed-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* 讓背景顏色會緩慢流動，增加神秘感 */
+            background: linear-gradient(135deg, #051020 0%, #0a2040 50%, #020b1a 100%);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            z-index: -999;
+            pointer-events: none;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 動態粒子畫布 */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* 在背景之上，魔方之下 */
+            pointer-events: none;
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 0 0 150px rgba(0,0,0,0.8);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* 3D 容器 */
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            /* 手機優化：防止觸控延遲 */
+            touch-action: none; 
+        }
+
+        /* --- 3D 方塊視覺升級 --- */
+        .cube-wrapper {
+            position: absolute;
+            transform-style: preserve-3d !important;
+            pointer-events: none;
+        }
+
+        .cube-face {
+            position: absolute;
+            box-sizing: border-box;
+            border: 4px solid rgba(0,0,0,0.8); 
+            border-radius: 10px;
+            font-weight: 800;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backface-visibility: hidden;
+            pointer-events: auto;
+            
+            /* 視覺升級：玻璃質感與高光 */
+            box-shadow: 
+                inset 0 0 20px rgba(0,0,0,0.5),
+                inset 2px 2px 5px rgba(255,255,255,0.4);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+            
+            /* 模擬表面材質 */
+            background-image: 
+                linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 100%);
+            
+            transition: filter 0.3s, box-shadow 0.3s, transform 0.3s;
+        }
+
+        /* 中獎時的發光特效 class */
+        .cube-face.winner-highlight {
+            border-color: #fff !important;
+            box-shadow: 
+                0 0 50px #ffdb4d, 
+                inset 0 0 20px #ffdb4d;
+            z-index: 9999;
+            filter: brightness(1.5);
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        /* 控制面板 */
+        #controls {
+            position: absolute;
+            bottom: 40px;
+            right: 30px;
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-end;
+            pointer-events: none; 
+        }
+        #controls button {
+            pointer-events: auto; 
+            width: 160px;
+            height: 50px;
+        }
+
+        /* 獎項顯示面板 */
+        #prize-display {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            background: rgba(0, 20, 40, 0.85);
+            border: 2px solid #ffdb4d;
+            padding: 10px 40px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            display: none; 
+            box-shadow: 0 0 30px rgba(255, 219, 77, 0.2);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #prize-name {
+            font-size: 32px;
+            font-weight: 900;
+            color: #ffdb4d;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        #prize-count-info {
+            font-size: 14px;
+            color: #aaa;
+            font-family: monospace;
+        }
+
+        /* 版權宣告 */
+        #footer-info {
+            position: absolute;
+            bottom: 10px;
+            left: 20px;
+            z-index: 25;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5); 
+            pointer-events: none; 
+            text-align: left;
+        }
+        #footer-info a {
+            color: #4facfe;
+            text-decoration: none;
+            pointer-events: auto; 
+        }
+
+        /* 按鈕樣式 */
+        button {
+            background: var(--btn-bg);
+            border: none;
+            color: white;
+            font-size: 16px; 
+            border-radius: 12px; 
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            outline: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+        button:hover::after { left: 100%; }
+        button:active { transform: scale(0.96); }
+        button:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        button.settings-btn {
+            background: rgba(30, 50, 70, 0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(5px);
+        }
+
+        button.draw-btn {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            font-size: 22px;
+            height: 60px !important;
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 0 30px rgba(255, 75, 43, 0.4);
+            order: -1; 
+        }
+
+        /* 彈窗通用 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .modal.show { opacity: 1; }
+
+        .modal-content {
+            background: var(--modal-bg);
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+            color: #eee;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal.show .modal-content { transform: scale(1); }
+
+        .modal-header {
+            font-size: 22px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 15px;
+            font-weight: 900;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 輸入框樣式 */
+        textarea, input[type="text"], input[type="number"] {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 16px;
+            box-sizing: border-box;
+            margin-top: 5px;
+            transition: border-color 0.3s;
+        }
+        textarea:focus, input:focus {
+            border-color: #4facfe;
+            outline: none;
+            background: rgba(0,0,0,0.5);
+        }
+        textarea { height: 100px; resize: vertical; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 6px; opacity: 0.8; font-size: 14px; font-weight: bold;}
+        
+        /* 歷史紀錄列表 */
+        #history-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .history-item {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        .history-time { color: #aaa; font-size: 12px; }
+        .history-names { color: #ffdb4d; font-weight: bold; }
+
+        /* 中獎結果展示 */
+        #result-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 12, 25, 0.92);
+            z-index: 50;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #result-title {
+            font-size: 48px;
+            color: #ff4b2b;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: 900;
+            text-shadow: 0 0 40px rgba(255, 75, 43, 0.4);
+            opacity: 0;
+            transform: translateY(-20px);
+            animation: slideDownFade 0.5s 0.2s forwards;
+        }
+        
+        #result-subtitle {
+             font-size: 24px;
+             color: #ffdb4d;
+             margin-bottom: 30px;
+             font-weight: 700;
+             letter-spacing: 1px;
+             opacity: 0;
+             animation: slideDownFade 0.5s 0.4s forwards;
+        }
+
+        #winners-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 25px;
+            width: 90%;
+            max-width: 1000px;
+            max-height: 55vh;
+            overflow-y: auto;
+            padding: 20px;
+            justify-items: center;
+        }
+
+        .winner-card {
+            background: #fff;
+            color: #000;
+            width: 140px;
+            aspect-ratio: 1 / 1;
+            padding: 5px;
+            border: 6px solid #222;
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 28px;
+            font-weight: 800;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.6),
+                inset 0 0 20px rgba(0,0,0,0.1);
+            position: relative;
+            opacity: 0;
+            transform: scale(0.2) rotate(-20deg);
+            background-image: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 60%);
+        }
+
+        @keyframes elasticPop {
+            0% { opacity: 0; transform: scale(0.2) rotate(-20deg); }
+            60% { opacity: 1; transform: scale(1.1) rotate(5deg); }
+            80% { transform: scale(0.95) rotate(-2deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0); }
+        }
+
+        @keyframes slideDownFade {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: transparent;
+            font-size: 40px;
+            color: #666;
+            cursor: pointer;
+            box-shadow: none;
+            width: auto; height: auto;
+        }
+        .close-btn:hover { color: #fff; transform: rotate(90deg); }
+
+        #confetti-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 55;
+            display: none;
+        }
+        .confetti {
+            position: absolute;
+            width: 10px; height: 10px;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            to { transform: translateY(110vh) rotate(720deg); }
+        }
+
+        .checkbox-wrapper, .radio-wrapper {
+            display: flex; align-items: center; cursor: pointer; padding: 5px 0;
+        }
+        .checkbox-wrapper input, .radio-wrapper input {
+            margin-right: 10px; width: 20px; height: 20px; accent-color: #ff4b2b;
+        }
+
+        @media (max-width: 768px) {
+            #result-title { font-size: 32px; }
+            .winner-card { width: 110px; font-size: 20px; border-width: 4px; }
+            #winners-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 15px; }
+            #controls { bottom: 30px; right: 15px; gap: 10px; } 
+            button { width: 50px; height: 50px; font-size: 0; border-radius: 50%; padding: 0; display: flex; justify-content: center; align-items: center; }
+            button::before { font-size: 24px; }
+            button.settings-btn::before { content: '⚙'; }
+            button.history-btn::before { content: '📜'; }
+            button.audio-btn::before { content: '🔊'; } 
+            
+            button.draw-btn { 
+                width: 80px !important; height: 80px !important; 
+                font-size: 16px; border-radius: 50%; 
+                font-size: 0; 
+            }
+            button.draw-btn::before { content: 'GO'; font-size: 28px; font-weight: 900;}
+            
+            #footer-info { display: none; }
+            .modal-content { width: 95%; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 動態背景層 -->
+    <div id="fixed-background"></div>
+    <canvas id="bg-canvas"></canvas> <!-- 新增：粒子特效畫布 -->
+    <div class="vignette"></div>
+
+    <div id="prize-display">
+        <div id="prize-name">特獎</div>
+        <div id="prize-count-info">剩餘數量: 1</div>
+    </div>
+
+    <div id="container"></div>
+    <div id="confetti-container"></div>
+
+    <div id="controls">
+        <button class="settings-btn" onclick="openSettings()">⚙ 設定與名單</button>
+        <button class="history-btn settings-btn" onclick="openHistory()">📜 歷史紀錄</button>
+        <button class="audio-btn settings-btn" onclick="toggleAudio()">🔊 音效: 開</button>
+        <button class="draw-btn" onclick="startLottery()">轉動魔方</button>
+    </div>
+
+    <div id="footer-info">
+        <div>👨‍🏫 Puti-AI黃朝榮老師 | 3D魔方抽籤器 (PRO版)</div>
+    </div>
+
+    <!-- 設定彈窗 -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>設定面板</span>
+                <span style="cursor:pointer; font-size:20px;" onclick="closeSettings()">✕</span>
+            </div>
+            
+            <div class="input-group">
+                <label>活動標題:</label>
+                <input type="text" id="event-title" value="幸運魔方 誰是贏家">
+            </div>
+
+            <div class="input-group" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
+                 <div class="checkbox-wrapper" onclick="document.getElementById('prize-mode-toggle').click()">
+                    <input type="checkbox" id="prize-mode-toggle" onchange="togglePrizeInput()">
+                    <label style="margin:0; font-weight:bold; color: #ffdb4d; cursor: pointer;">🏆 啟用獎項模式</label>
+                </div>
+                
+                <div id="prize-setup-area" style="display:none; margin-top: 15px;">
+                    <label>獎項清單 (名稱 * 數量):</label>
+                    <textarea id="prizes-input" placeholder="特獎 * 1&#10;二獎 * 3&#10;普獎 * 10"></textarea>
+                    
+                    <div class="checkbox-wrapper" style="margin-top: 10px;">
+                        <input type="checkbox" id="prize-draw-all">
+                        <label for="prize-draw-all" style="margin:0; color: #bbb; font-size: 13px; cursor:pointer;">⚡ 一次抽完該獎項</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>名單來源:</label>
+                <div style="display: flex; gap: 20px;">
+                    <label class="radio-wrapper">
+                        <input type="radio" name="sourceType" value="seat" onchange="toggleSource()" checked> 
+                        座號產生
+                    </label>
+                    <label class="radio-wrapper">
+                        <input type="radio" name="sourceType" value="custom" onchange="toggleSource()"> 
+                        自訂名單
+                    </label>
+                </div>
+            </div>
+
+            <div id="seat-section" class="input-group">
+                <label>產生座號 (1 ~ N):</label>
+                <input type="number" id="seat-count" value="27" min="1" max="200" placeholder="27">
+            </div>
+
+            <div id="custom-section" class="input-group" style="display:none;">
+                <label>名單 (每行一個):</label>
+                <textarea id="names-input" placeholder="Iron Man&#10;Thor&#10;Hulk"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 15px;">
+                <div class="input-group" style="flex: 1;" id="draw-count-group">
+                    <label>抽出人數:</label>
+                    <input type="number" id="draw-count" value="1" min="1" max="50">
+                </div>
+                <div class="checkbox-wrapper" onclick="document.getElementById('remove-winner').click()" style="flex: 1; align-items: flex-end; padding-bottom: 20px;">
+                    <input type="checkbox" id="remove-winner">
+                    <label style="margin:0; font-size:14px; cursor:pointer;">抽後移除</label>
+                </div>
+            </div>
+
+            <div style="text-align: right; margin-top: 10px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <button onclick="saveSettings()" style="width: 100%;">儲存設定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 歷史紀錄彈窗 -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>歷史紀錄</span>
+                <span style="cursor:pointer; font-size:20px;" onclick="closeHistory()">✕</span>
+            </div>
+            <div id="history-list">
+                <div style="text-align:center; color:#888; padding: 20px;">尚無紀錄</div>
+            </div>
+            <button onclick="clearHistory()" style="width: 100%; margin-top: 20px; background: #333;">清除紀錄</button>
+        </div>
+    </div>
+
+    <!-- 結果層 -->
+    <div id="result-overlay">
+        <button class="close-btn" onclick="closeResults()">×</button>
+        <div id="result-title"></div>
+        <div id="result-subtitle"></div>
+        <div id="winners-grid"></div>
+        <button onclick="closeResults()" style="margin-top: 30px; padding: 12px 40px; font-size: 18px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5);">繼續抽籤</button>
+    </div>
+
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
+        import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
+
+        // --- 全局變數 ---
+        let camera, scene, renderer, controls;
+        let objects = []; 
+        let realNames = [];   
+        let visualNames = []; 
+        let group; 
+        
+        // 動畫狀態
+        let state = 'IDLE'; // IDLE, SPINNING, ALIGNING, REVEALING
+        let twistQueue = []; 
+        let currentMove = null;
+        let pivotObj; 
+        let originalCameraPos = new THREE.Vector3();
+        
+        // 變速系統
+        let initialMoves = 0; 
+        
+        // 系統設定
+        let audioContext = null;
+        let isAudioEnabled = true;
+        let removeWinnerMode = false;
+        let prizeMode = false;
+        let prizes = [];
+        let historyLog = [];
+
+        let cubeDim = 3;
+        let cubeSpacing = 145;
+
+        // 背景粒子系統
+        let bgCanvas, bgCtx;
+        let particles = [];
+        const PARTICLE_COUNT = 300; // 粒子數量
+
+        const RUBIK_FACE_COLORS = {
+            front: '#D50000',  
+            back: '#FF6D00',   
+            right: '#2962FF',  
+            left: '#00C853',   
+            top: '#EEEEEE',    
+            bottom: '#FFD600'  
+        };
+
+        const STORAGE_KEY = 'puti_rubik_pro_v2'; 
+
+        init();
+        animate();
+
+        function init() {
+            loadSettings();
+
+            camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 15000);
+            camera.position.set(2200, 1500, 4000);
+            originalCameraPos.copy(camera.position);
+
+            scene = new THREE.Scene();
+            group = new THREE.Group();
+            scene.add(group);
+            
+            pivotObj = new THREE.Object3D();
+            pivotObj.rotation.order = 'XYZ'; 
+            group.add(pivotObj);
+
+            createRubiksCubeLayout(); 
+
+            renderer = new CSS3DRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            controls = new TrackballControls(camera, renderer.domElement);
+            controls.rotateSpeed = 1.0;
+            controls.minDistance = 500;
+            controls.maxDistance = 10000;
+            controls.noZoom = false;
+            controls.noPan = true;
+
+            window.addEventListener('resize', onWindowResize);
+            
+            initParticles(); // 初始化背景粒子
+            
+            toggleSource(); 
+            togglePrizeInput();
+            updatePrizeDisplay();
+        }
+
+        // --- 核心工具 ---
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        // --- 背景粒子特效系統 ---
+        function initParticles() {
+            bgCanvas = document.getElementById('bg-canvas');
+            bgCtx = bgCanvas.getContext('2d');
+            resizeCanvas();
+
+            particles = [];
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                particles.push(createParticle());
+            }
+        }
+
+        function createParticle() {
+            return {
+                x: (Math.random() - 0.5) * window.innerWidth, // 以中心為原點
+                y: (Math.random() - 0.5) * window.innerHeight,
+                z: Math.random() * 2000 + 500, // 深度
+                size: Math.random() * 2 + 0.5,
+                color: '#88ccff'
+            };
+        }
+
+        function resizeCanvas() {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+        }
+
+        function updateAndDrawParticles() {
+            // 清除畫布 (保留一點拖影效果)
+            bgCtx.fillStyle = 'rgba(5, 16, 32, 0.4)'; // 背景色帶透明度
+            bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+            const cx = bgCanvas.width / 2;
+            const cy = bgCanvas.height / 2;
+            
+            // 根據抽獎狀態決定速度與效果
+            let speed = 5; // IDLE 預設速度
+            let colorOverride = null;
+
+            if (state === 'SPINNING') {
+                speed = 60; // 光速飛行感
+            } else if (state === 'REVEALING') {
+                speed = 2; // 變慢
+                colorOverride = '#ffdb4d'; // 金色
+            }
+
+            bgCtx.beginPath();
+            particles.forEach(p => {
+                // 移動粒子 (往螢幕飛來)
+                p.z -= speed;
+                
+                // 重置粒子
+                if (p.z <= 10) {
+                    p.z = 2500;
+                    p.x = (Math.random() - 0.5) * window.innerWidth;
+                    p.y = (Math.random() - 0.5) * window.innerHeight;
+                }
+
+                // 透視投影計算
+                const scale = 500 / p.z;
+                const screenX = cx + p.x * scale;
+                const screenY = cy + p.y * scale;
+                const size = p.size * scale;
+
+                // 繪製
+                const alpha = Math.min(1, (2500 - p.z) / 1000); // 遠處透明
+                bgCtx.fillStyle = colorOverride || `rgba(180, 220, 255, ${alpha})`;
+                
+                // 轉動時繪製成線條 (Speed Lines)
+                if (state === 'SPINNING') {
+                     const prevScale = 500 / (p.z + speed * 2);
+                     const prevX = cx + p.x * prevScale;
+                     const prevY = cy + p.y * prevScale;
+                     
+                     bgCtx.moveTo(prevX, prevY);
+                     bgCtx.lineTo(screenX, screenY);
+                     bgCtx.strokeStyle = `rgba(180, 220, 255, ${alpha * 0.5})`;
+                     bgCtx.stroke();
+                } else {
+                     bgCtx.moveTo(screenX, screenY);
+                     bgCtx.arc(screenX, screenY, size, 0, Math.PI * 2);
+                     bgCtx.fill();
+                }
+            });
+        }
+
+        // --- 3D 構建 ---
+        function createRubiksCubeLayout() {
+            // 清理舊物件
+            objects.forEach(obj => {
+                if(obj.parent) obj.parent.remove(obj);
+                // 移除 DOM
+                if(obj.element && obj.element.parentNode) obj.element.parentNode.removeChild(obj.element);
+            });
+            objects = [];
+
+            if(visualNames.length === 0) return;
+
+            const isMobile = window.innerWidth < 768;
+            const cubeSize = isMobile ? 100 : 250; 
+            const gap = isMobile ? 2 : 5; 
+            cubeSpacing = cubeSize + gap;
+            const offset = ((cubeDim - 1) * cubeSpacing) / 2;
+            const halfSize = cubeSize / 2;
+
+            const total = visualNames.length;
+
+            for (let i = 0; i < total; i++) {
+                const cubeWrapper = document.createElement('div');
+                cubeWrapper.className = 'cube-wrapper';
+                cubeWrapper.style.width = cubeSize + 'px';
+                cubeWrapper.style.height = cubeSize + 'px';
+                
+                const faces = ['front', 'back', 'right', 'left', 'top', 'bottom'];
+                const name = visualNames[i];
+                
+                faces.forEach(faceClass => {
+                    const face = document.createElement('div');
+                    face.className = `cube-face face-${faceClass}`;
+                    
+                    const hexColor = RUBIK_FACE_COLORS[faceClass];
+                    face.style.backgroundColor = hexToRgba(hexColor, 0.85); // 提高不透明度增加質感
+                    
+                    // 自動判斷文字顏色
+                    face.style.color = (faceClass === 'top' || faceClass === 'bottom') ? '#000' : '#fff';
+
+                    // 文字自適應
+                    const fontSize = name.length > 3 ? (cubeSize * 0.18) : (cubeSize * 0.25);
+                    face.style.fontSize = fontSize + 'px'; 
+                    face.textContent = name;
+                    
+                    face.style.width = cubeSize + 'px';
+                    face.style.height = cubeSize + 'px';
+
+                    // 3D 變換
+                    let transform = '';
+                    switch(faceClass) {
+                        case 'front':  transform = `rotateY(0deg) translateZ(${halfSize}px)`; break;
+                        case 'back':   transform = `rotateY(180deg) translateZ(${halfSize}px)`; break;
+                        case 'right':  transform = `rotateY(90deg) translateZ(${halfSize}px)`; break;
+                        case 'left':   transform = `rotateY(-90deg) translateZ(${halfSize}px)`; break;
+                        case 'top':    transform = `rotateX(90deg) translateZ(${halfSize}px)`; break;
+                        case 'bottom': transform = `rotateX(-90deg) translateZ(${halfSize}px)`; break;
+                    }
+                    face.style.transform = transform;
+                    cubeWrapper.appendChild(face);
+                });
+
+                const objectCSS = new CSS3DObject(cubeWrapper);
+
+                const ix = (i % cubeDim);
+                const iy = Math.floor((i / cubeDim)) % cubeDim;
+                const iz = Math.floor(i / (cubeDim * cubeDim));
+
+                objectCSS.position.x = (ix * cubeSpacing) - offset;
+                objectCSS.position.y = (iy * cubeSpacing) - offset;
+                objectCSS.position.z = (iz * cubeSpacing) - offset;
+                
+                group.add(objectCSS);
+                objects.push(objectCSS);
+            }
+        }
+
+        // --- 遊戲循環與物理模擬 ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 更新背景粒子
+            updateAndDrawParticles();
+
+            if (state === 'SPINNING') {
+                // 鏡頭震動 (Camera Shake) - 速度越快震動越大
+                const remaining = twistQueue.length;
+                const progress = 1 - (remaining / initialMoves); // 0 -> 1
+                
+                // 震動強度曲線：中間最強，結尾消失
+                let shakeIntensity = 0;
+                if(remaining > 5) {
+                    shakeIntensity = Math.sin(progress * Math.PI) * 20; 
+                }
+
+                camera.position.x = originalCameraPos.x + (Math.random() - 0.5) * shakeIntensity;
+                camera.position.y = originalCameraPos.y + (Math.random() - 0.5) * shakeIntensity;
+
+                if (!currentMove && twistQueue.length > 0) {
+                    startNextTwist();
+                } else if (currentMove) {
+                    updateCurrentTwist();
+                }
+            } 
+            else if (state === 'ALIGNING') {
+                // 回歸平穩鏡頭
+                camera.position.lerp(originalCameraPos, 0.1);
+
+                // 魔方自動對齊
+                group.rotation.x = THREE.MathUtils.lerp(group.rotation.x, 0, 0.1);
+                group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, 0, 0.1);
+                group.rotation.z = THREE.MathUtils.lerp(group.rotation.z, 0, 0.1);
+                
+                if(Math.abs(group.rotation.x) < 0.005 && Math.abs(group.rotation.y) < 0.005) {
+                    group.rotation.set(0,0,0);
+                    prepareReveal();
+                }
+            }
+            else if (state === 'REVEALING') {
+                // 鏡頭緩慢推進聚焦 (Dramatic Zoom)
+                const targetPos = new THREE.Vector3(originalCameraPos.x * 0.6, originalCameraPos.y * 0.6, originalCameraPos.z * 0.6);
+                camera.position.lerp(targetPos, 0.05);
+            }
+            else {
+                // IDLE 狀態：輕微自轉
+                const baseSpeed = 0.001;
+                group.rotation.x += baseSpeed * 0.5;
+                group.rotation.y += baseSpeed;
+                
+                // 確保鏡頭在設定改變後能歸位
+                if(camera.position.distanceTo(originalCameraPos) > 1) {
+                    camera.position.lerp(originalCameraPos, 0.05);
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // 啟動轉動
+        function startNextTwist() {
+            currentMove = twistQueue.shift();
+            pivotObj.rotation.set(0, 0, 0);
+            pivotObj.position.set(0, 0, 0); 
+
+            const targetPos = getTargetPosForIndex(currentMove.index);
+            const axis = currentMove.axis;
+            
+            // 找出同一層的方塊
+            currentMove.activeObjects = [];
+            const tolerance = 10;
+            
+            for (let i = 0; i < objects.length; i++) {
+                const obj = objects[i];
+                let val;
+                if(axis === 'x') val = obj.position.x;
+                else if(axis === 'y') val = obj.position.y;
+                else val = obj.position.z;
+
+                if (Math.abs(val - targetPos) < tolerance) {
+                    pivotObj.attach(obj); 
+                    currentMove.activeObjects.push(obj);
+                }
+            }
+            
+            // 根據剩餘步數決定音效與速度 (Pacing)
+            const remaining = twistQueue.length + 1;
+            let pitch = 1.0;
+            if (remaining > initialMoves * 0.8) pitch = 0.8 + Math.random()*0.2; // 加速期
+            else if (remaining > 10) pitch = 1.2 + Math.random()*0.3; // 高速期
+            else pitch = 1.0 - (10 - remaining) * 0.08; // 減速期 (變低沉)
+
+            playMechanicalClick(Math.max(0.3, pitch));
+        }
+
+        function getTargetPosForIndex(index) {
+            const offset = ((cubeDim - 1) * cubeSpacing) / 2;
+            return (index * cubeSpacing) - offset;
+        }
+
+        function updateCurrentTwist() {
+            const remaining = twistQueue.length;
+            
+            // --- 物理模擬核心：非線性速度 ---
+            let speed = 0.35; // 最高速
+            
+            if (remaining > initialMoves - 5) {
+                // 加速階段
+                speed = 0.1 + (initialMoves - remaining) * 0.05;
+            } else if (remaining < 12) {
+                // 減速階段 (Exponential decay)
+                // 讓最後幾步變得非常慢，製造張力
+                speed = Math.max(0.04, remaining * 0.035);
+            }
+            
+            const targetAngle = Math.PI / 2 * currentMove.direction;
+            
+            if (currentMove.axis === 'x') pivotObj.rotation.x += speed * currentMove.direction;
+            else if (currentMove.axis === 'y') pivotObj.rotation.y += speed * currentMove.direction;
+            else if (currentMove.axis === 'z') pivotObj.rotation.z += speed * currentMove.direction;
+
+            currentMove.progress += speed;
+
+            if (currentMove.progress >= Math.PI / 2) {
+                // 修正角度
+                if (currentMove.axis === 'x') pivotObj.rotation.x = targetAngle;
+                else if (currentMove.axis === 'y') pivotObj.rotation.y = targetAngle;
+                else if (currentMove.axis === 'z') pivotObj.rotation.z = targetAngle;
+                
+                pivotObj.updateMatrixWorld(); 
+
+                const children = [...pivotObj.children];
+                children.forEach(child => {
+                    group.attach(child); 
+                });
+
+                currentMove = null;
+
+                if (twistQueue.length === 0) {
+                     state = 'ALIGNING';
+                }
+            }
+        }
+
+        // --- 抽獎邏輯 ---
+
+        function startLottery() {
+            initAudio();
+            
+            if (state !== 'IDLE') return; // 防止重複點擊
+            if (realNames.length === 0) { alert("名單為空！"); openSettings(); return; }
+            if (prizeMode && !getCurrentPrize()) { alert("獎項已抽完！"); return; }
+
+            state = 'SPINNING';
+            
+            const drawBtn = document.querySelector('.draw-btn');
+            drawBtn.style.opacity = "0.5";
+            drawBtn.style.transform = "scale(0.9)";
+            
+            // 產生轉動序列
+            twistQueue = [];
+            // 增加步數以配合變速效果 (35 ~ 50 步)
+            initialMoves = 35 + Math.floor(Math.random() * 15); 
+            
+            for(let i=0; i<initialMoves; i++) {
+                const axis = ['x', 'y', 'z'][Math.floor(Math.random() * 3)];
+                const index = Math.floor(Math.random() * cubeDim); 
+                const direction = Math.random() > 0.5 ? 1 : -1;
+                
+                twistQueue.push({ axis, index, direction, progress: 0 });
+            }
+            
+            currentMove = null;
+            // 播放開始音效
+            playWhoosh();
+        };
+        window.startLottery = startLottery;
+
+        // 輔助函式：判斷魔方中哪一面朝向觀眾
+        function getVisibleFaceInfo(obj) {
+            const normals = [
+                { name: 'front',  vec: new THREE.Vector3(0, 0, 1) },
+                { name: 'back',   vec: new THREE.Vector3(0, 0, -1) },
+                { name: 'right',  vec: new THREE.Vector3(1, 0, 0) },
+                { name: 'left',   vec: new THREE.Vector3(-1, 0, 0) },
+                { name: 'top',    vec: new THREE.Vector3(0, 1, 0) },
+                { name: 'bottom', vec: new THREE.Vector3(0, -1, 0) }
+            ];
+
+            let bestFace = 'front';
+            let maxZ = -Infinity;
+
+            const rotationMatrix = new THREE.Matrix4().extractRotation(obj.matrixWorld);
+
+            normals.forEach(n => {
+                const v = n.vec.clone().applyMatrix4(rotationMatrix);
+                if (v.z > maxZ) {
+                    maxZ = v.z;
+                    bestFace = n.name;
+                }
+            });
+
+            return {
+                faceName: bestFace,
+                color: RUBIK_FACE_COLORS[bestFace],
+                element: obj.element.querySelector(`.face-${bestFace}`)
+            };
+        }
+
+        // 準備揭曉 (Highlight 階段)
+        function prepareReveal() {
+            state = 'REVEALING';
+            playTensionBuildUp(); // 播放張力音效
+            
+            // 計算中獎者
+            let drawCount = parseInt(document.getElementById('draw-count').value) || 1;
+            let currentPrize = null;
+            if (prizeMode) {
+                currentPrize = getCurrentPrize();
+                if(currentPrize) {
+                    const drawAll = document.getElementById('prize-draw-all').checked;
+                    if (drawAll) drawCount = currentPrize.count;
+                    else drawCount = Math.min(drawCount, currentPrize.count);
+                }
+            }
+            
+            // 找出正面方塊
+            group.updateMatrixWorld(true);
+            const offset = ((cubeDim - 1) * cubeSpacing) / 2;
+            const frontFaceObjects = objects.filter(obj => Math.abs(obj.position.z - offset) < 10);
+
+            let candidates = [];
+            
+            frontFaceObjects.forEach(obj => {
+                // 使用新邏輯：取得真正面向觀眾的那個面
+                const visibleInfo = getVisibleFaceInfo(obj);
+                if(visibleInfo.element) {
+                    candidates.push({ 
+                        name: visibleInfo.element.textContent, 
+                        obj: obj, 
+                        face: visibleInfo.element,
+                        color: visibleInfo.color,
+                        faceName: visibleInfo.faceName
+                    });
+                }
+            });
+
+            // 洗牌
+            candidates = candidates.sort(() => 0.5 - Math.random());
+            
+            // 確保數量足夠 (若正面不夠則補其他)
+            let winners = [];
+            let winningFaces = [];
+            
+            for(let i=0; i<drawCount; i++) {
+                if(i < candidates.length) {
+                    winners.push({
+                        name: candidates[i].name,
+                        color: candidates[i].color,
+                        faceName: candidates[i].faceName
+                    });
+                    winningFaces.push(candidates[i].face);
+                } else {
+                    // 備案：隨機補人，顏色隨機
+                    const others = realNames.filter(n => !winners.map(w=>w.name).includes(n));
+                    if(others.length > 0) {
+                        const randomColorKey = Object.keys(RUBIK_FACE_COLORS)[Math.floor(Math.random() * 6)];
+                        winners.push({
+                            name: others[0],
+                            color: RUBIK_FACE_COLORS[randomColorKey],
+                            faceName: randomColorKey
+                        });
+                    }
+                }
+            }
+
+            // --- 視覺效果：高亮中獎方塊 ---
+            winningFaces.forEach(face => {
+                face.classList.add('winner-highlight');
+            });
+
+            // 延遲揭曉 (製造懸念)
+            setTimeout(() => {
+                showFinalResults(winners, currentPrize);
+                // 移除高亮
+                winningFaces.forEach(face => face.classList.remove('winner-highlight'));
+            }, 1200); // 1.2秒後彈出
+        }
+
+        function showFinalResults(winners, currentPrize) {
+            playWinFanfare(); // 播放勝利音效
+            showConfetti();
+            if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+            const titleInput = document.getElementById('event-title').value;
+            document.getElementById('result-title').textContent = titleInput;
+            
+            const subTitle = document.getElementById('result-subtitle');
+            let prizeNameForLog = "";
+            if (prizeMode && currentPrize) {
+                subTitle.textContent = `🎊 ${currentPrize.name} 🎊`;
+                subTitle.style.display = 'block';
+                currentPrize.count -= winners.length;
+                prizeNameForLog = currentPrize.name;
+                saveToStorage();
+                updatePrizeDisplay();
+            } else {
+                subTitle.style.display = 'none';
+            }
+
+            // 更新歷史紀錄 (只傳名字字串)
+            addToHistory(winners.map(w => w.name), prizeNameForLog);
+
+            showResultsUI(winners);
+
+            // 處理移除名單
+            if (removeWinnerMode) {
+                const winnerNames = winners.map(w => w.name);
+                realNames = realNames.filter(name => !winnerNames.includes(name));
+                // 稍後重建魔方
+            }
+            
+            const drawBtn = document.querySelector('.draw-btn');
+            drawBtn.style.opacity = "1";
+            drawBtn.style.transform = "scale(1)";
+        }
+
+        function showResultsUI(winners) {
+            const overlay = document.getElementById('result-overlay');
+            const grid = document.getElementById('winners-grid');
+            grid.innerHTML = ''; 
+            
+            winners.forEach((winner, index) => {
+                const card = document.createElement('div');
+                card.className = 'winner-card';
+                card.textContent = winner.name;
+                // 彈性動畫延遲
+                card.style.animation = `elasticPop 0.8s ${index * 0.15}s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`;
+                
+                // 使用從魔方上偵測到的顏色
+                const bgColor = winner.color;
+                const faceName = winner.faceName;
+                
+                card.style.backgroundColor = bgColor;
+                // 根據底色決定文字顏色 (白底/黃底用黑色字，其他用白色字)
+                card.style.color = (faceName === 'top' || faceName === 'bottom') ? '#000' : '#fff';
+
+                grid.appendChild(card);
+            });
+            
+            overlay.style.display = 'flex';
+            
+            // 加入 active class 觸發 CSS 動畫
+            setTimeout(() => {
+                 document.getElementById('result-title').style.opacity = 1;
+                 document.getElementById('result-subtitle').style.opacity = 1;
+            }, 10);
+        }
+
+        // --- 音效工程 (Synthesized Audio) ---
+        function initAudio() {
+            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioContext.state === 'suspended') audioContext.resume();
+        }
+
+        // 機械轉動聲 (Click) - 使用濾波器製造"喀"的感覺
+        function playMechanicalClick(pitch = 1.0) {
+            if (!audioContext || !isAudioEnabled) return;
+            const t = audioContext.currentTime;
+            
+            // 噪音源 (Noise Buffer)
+            const bufferSize = audioContext.sampleRate * 0.05; // 50ms
+            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioContext.createBufferSource();
+            noise.buffer = buffer;
+            
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 800 * pitch;
+            filter.Q.value = 1;
+
+            const gain = audioContext.createGain();
+            gain.gain.setValueAtTime(0.3, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.04);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            noise.start(t);
+        }
+
+        // 開始時的呼嘯聲
+        function playWhoosh() {
+            if (!audioContext || !isAudioEnabled) return;
+            const t = audioContext.currentTime;
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.frequency.setValueAtTime(200, t);
+            osc.frequency.exponentialRampToValueAtTime(600, t + 0.3);
+            
+            gain.gain.setValueAtTime(0.1, t);
+            gain.gain.linearRampToValueAtTime(0, t + 0.3);
+            
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start(t);
+            osc.stop(t + 0.3);
+        }
+
+        // 揭曉前的張力聲 (低頻隆隆聲)
+        function playTensionBuildUp() {
+            if (!audioContext || !isAudioEnabled) return;
+            const t = audioContext.currentTime;
+            const osc = audioContext.createOscillator();
+            osc.type = 'sawtooth';
+            const gain = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+            
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(100, t);
+            filter.frequency.linearRampToValueAtTime(400, t + 1.0);
+
+            osc.frequency.setValueAtTime(50, t);
+            osc.frequency.linearRampToValueAtTime(80, t + 1.0);
+
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.linearRampToValueAtTime(0, t + 1.0);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start(t);
+            osc.stop(t + 1.2);
+        }
+
+        // 勝利號角 (C Major Arpeggio)
+        function playWinFanfare() {
+            if (!audioContext || !isAudioEnabled) return;
+            const t = audioContext.currentTime;
+            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]; // C, E, G, C, E, G
+            
+            notes.forEach((freq, i) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.type = 'triangle';
+                
+                const startTime = t + i * 0.08;
+                osc.frequency.setValueAtTime(freq, startTime);
+                
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.2, startTime + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + 2.0);
+                
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                osc.start(startTime);
+                osc.stop(startTime + 2.5);
+            });
+        }
+
+        // --- 歷史紀錄功能 ---
+        function addToHistory(winners, prizeName) {
+            const now = new Date();
+            const timeString = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            
+            const record = {
+                time: timeString,
+                winners: winners.join(', '),
+                prize: prizeName || "抽籤"
+            };
+            
+            historyLog.unshift(record); // 加到最前面
+            if(historyLog.length > 50) historyLog.pop(); // 保持最近50筆
+            saveToStorage();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            
+            if(historyLog.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:#888; padding: 20px;">尚無紀錄</div>';
+                return;
+            }
+
+            historyLog.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `
+                    <div style="flex:1;">
+                        <div style="font-size:12px; color:#aaa;">${item.time} ${item.prize ? ' - ' + item.prize : ''}</div>
+                        <div class="history-names">${item.winners}</div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function openHistory() {
+            renderHistory();
+            openModal('history-modal');
+        }
+        window.openHistory = openHistory;
+
+        function closeHistory() { closeModal('history-modal'); }
+        window.closeHistory = closeHistory;
+
+        function clearHistory() {
+            if(confirm("確定要清除所有紀錄嗎？")) {
+                historyLog = [];
+                saveToStorage();
+                renderHistory();
+            }
+        }
+        window.clearHistory = clearHistory;
+
+        // --- 基礎 UI 功能 ---
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        function openSettings() {
+            if(prizes.length > 0) {
+                 const prizeText = prizes.map(p => `${p.name} * ${p.count}`).join('\n');
+                 document.getElementById('prizes-input').value = prizeText;
+            }
+            openModal('settings-modal');
+        };
+        window.openSettings = openSettings;
+
+        function closeSettings() { closeModal('settings-modal'); };
+        window.closeSettings = closeSettings;
+
+        function toggleAudio() {
+            isAudioEnabled = !isAudioEnabled;
+            const btn = document.querySelector('.audio-btn');
+            // 手機版按鈕是圓的，只顯示圖示；桌面版顯示文字
+            const isMobile = window.innerWidth <= 768;
+            btn.textContent = isAudioEnabled ? (isMobile ? "" : "🔊 音效: 開") : (isMobile ? "" : "🔇 音效: 關");
+            if(isMobile) {
+                btn.classList.toggle('muted', !isAudioEnabled); // 可以加 CSS 改變圖示
+                btn.style.filter = isAudioEnabled ? 'grayscale(0)' : 'grayscale(1)';
+            }
+            if(isAudioEnabled) initAudio();
+        }
+        window.toggleAudio = toggleAudio;
+
+        function closeResults() {
+            document.getElementById('result-overlay').style.display = 'none';
+            document.getElementById('confetti-container').style.display = 'none';
+            state = 'IDLE';
+            
+            if (removeWinnerMode) {
+                updateVisualNamesForCube(); 
+                createRubiksCubeLayout(); 
+            }
+        }
+        window.closeResults = closeResults;
+
+        // --- 儲存與讀取 (包含設定與歷史) ---
+        function saveToStorage() {
+            const settings = {
+                title: document.getElementById('event-title').value,
+                drawCount: document.getElementById('draw-count').value,
+                removeWinner: document.getElementById('remove-winner').checked,
+                mode: document.querySelector('input[name="sourceType"]:checked').value,
+                seatCount: document.getElementById('seat-count').value,
+                customNames: document.getElementById('names-input').value,
+                prizeMode: prizeMode,
+                prizeDrawAll: document.getElementById('prize-draw-all').checked,
+                prizes: prizes,
+                history: historyLog
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+        }
+        window.saveSettings = saveToStorage; // button onclick calls this
+
+        function loadSettings() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    document.getElementById('event-title').value = settings.title || "幸運魔方 誰是贏家";
+                    document.getElementById('draw-count').value = settings.drawCount || 1;
+                    document.getElementById('remove-winner').checked = settings.removeWinner || false;
+                    
+                    const mode = settings.mode || 'seat';
+                    const radios = document.getElementsByName('sourceType');
+                    for(let r of radios) { if(r.value === mode) r.checked = true; }
+
+                    document.getElementById('seat-count').value = settings.seatCount || 27;
+                    document.getElementById('names-input').value = settings.customNames || "";
+                    
+                    prizeMode = settings.prizeMode || false;
+                    document.getElementById('prize-mode-toggle').checked = prizeMode;
+                    document.getElementById('prize-draw-all').checked = settings.prizeDrawAll || false;
+                    prizes = settings.prizes || [];
+                    historyLog = settings.history || [];
+                    
+                    removeWinnerMode = settings.removeWinner;
+                    generateNameList(mode);
+                } catch (e) {
+                    console.error("Settings error", e);
+                    setDefaultSettings();
+                }
+            } else {
+                setDefaultSettings();
+            }
+        }
+        
+        // ... (保留原有的 helper functions: setDefaultSettings, generateNameList, toggleSource 等) ...
+        function setDefaultSettings() {
+            document.getElementById('seat-count').value = 27;
+            generateNameList('seat');
+        }
+        
+        function generateNameList(mode) {
+            if (mode === 'seat') {
+                const count = parseInt(document.getElementById('seat-count').value) || 27;
+                realNames = [];
+                for (let i = 1; i <= count; i++) { realNames.push(i + "號"); }
+            } else {
+                const text = document.getElementById('names-input').value;
+                realNames = text.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+                if (realNames.length === 0) realNames = ["無名單"];
+            }
+            updateVisualNamesForCube();
+        }
+        
+        function updateVisualNamesForCube() {
+            const minDim = Math.ceil(Math.pow(realNames.length, 1/3));
+            cubeDim = Math.max(3, minDim); 
+            const totalSlots = cubeDim * cubeDim * cubeDim;
+            visualNames = [];
+            let nameIndex = 0;
+            for(let i=0; i<totalSlots; i++) {
+                if(i < realNames.length) visualNames.push(realNames[i]);
+                else { visualNames.push(realNames[nameIndex % realNames.length]); nameIndex++; }
+            }
+        }
+
+        function toggleSource() {
+            const mode = document.querySelector('input[name="sourceType"]:checked').value;
+            document.getElementById('seat-section').style.display = (mode === 'seat') ? 'block' : 'none';
+            document.getElementById('custom-section').style.display = (mode === 'custom') ? 'block' : 'none';
+        }
+        window.toggleSource = toggleSource;
+
+        function togglePrizeInput() {
+            const isChecked = document.getElementById('prize-mode-toggle').checked;
+            document.getElementById('prize-setup-area').style.display = isChecked ? 'block' : 'none';
+            // 同步 UI 狀態
+            const drawCountInput = document.getElementById('draw-count');
+            const drawAllChecked = document.getElementById('prize-draw-all').checked;
+            if (isChecked && drawAllChecked) {
+                drawCountInput.disabled = true;
+                drawCountInput.style.opacity = 0.5;
+            } else {
+                drawCountInput.disabled = false;
+                drawCountInput.style.opacity = 1;
+            }
+        }
+        window.togglePrizeInput = togglePrizeInput;
+        document.getElementById('prize-draw-all').addEventListener('change', window.togglePrizeInput);
+
+        function parsePrizes(text) {
+            if(!text) return [];
+            return text.split('\n').map(line => {
+                const parts = line.split(/[*xX]/);
+                if(parts.length >= 2) return {name: parts[0].trim(), count: parseInt(parts[1]) || 1};
+                if(line.trim()) return {name: line.trim(), count: 1};
+                return null;
+            }).filter(p => p);
+        }
+
+        function getCurrentPrize() {
+            if (!prizeMode) return null;
+            return prizes.find(p => p.count > 0);
+        }
+        
+        function updatePrizeDisplay() {
+            const display = document.getElementById('prize-display');
+            if (prizeMode) {
+                const current = getCurrentPrize();
+                if (current) {
+                    display.style.display = 'block';
+                    document.getElementById('prize-name').textContent = current.name;
+                    document.getElementById('prize-count-info').textContent = `剩餘: ${current.count}`;
+                } else {
+                    display.style.display = 'block';
+                    document.getElementById('prize-name').textContent = "已抽完";
+                    document.getElementById('prize-count-info').textContent = "";
+                }
+            } else {
+                display.style.display = 'none';
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            // 更新背景 canvas
+            resizeCanvas();
+            createRubiksCubeLayout();
+        }
+        window.onWindowResize = onWindowResize;
+        
+        // --- 彩帶特效 ---
+        function showConfetti() {
+            const container = document.getElementById('confetti-container');
+            container.innerHTML = '';
+            container.style.display = 'block';
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#fff', '#ffa500'];
+            for(let i=0; i<150; i++) {
+                const conf = document.createElement('div');
+                conf.className = 'confetti';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                conf.style.opacity = Math.random();
+                container.appendChild(conf);
+            }
+        }
+    </script>
+</body>
+</html>
