@@ -505,12 +505,13 @@
             const USER_API_KEY = "AIzaSyAQ4OTgGgMSD8QV1rH9a4oqUesZh0q_YCs"; 
             
             let apiKey = "";
-            let modelName = "gemini-2.5-flash-preview-09-2025"; // 預覽環境專屬測試模型
+            let modelName = "gemini-2.5-flash"; // 將預設模型改為最新穩定版支援名稱
 
-            // 如果偵測到使用了真實金鑰，自動切換為「正式公開版模型」，避免 404 Not Found 錯誤
+            // 如果偵測到使用了真實金鑰，自動切換為正式公開版模型
             if (USER_API_KEY && USER_API_KEY.startsWith("AIza")) {
                 apiKey = USER_API_KEY;
-                modelName = "gemini-1.5-flash"; 
+                // 💡 關鍵修正：將原本找不到的 gemini-1.5-flash 改為最新的 gemini-2.5-flash
+                modelName = "gemini-2.5-flash"; 
             }
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
