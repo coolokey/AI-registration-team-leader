@@ -500,8 +500,20 @@
 
         // === 嚴格版真實 AI 視覺辨識引擎 ===
         async function analyzeWithGemini(base64Image, theme) {
-            const apiKey = "AIzaSyAQ4OTgGgMSD8QV1rH9a4oqUesZh0q_YCs"; // 執行環境會自動提供金鑰
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            // ⚠️ 老師請看這裡：金鑰與模型設定 ⚠️
+            // 已為您保留您輸入的真實金鑰
+            const USER_API_KEY = "AIzaSyAQ4OTgGgMSD8QV1rH9a4oqUesZh0q_YCs"; 
+            
+            let apiKey = "";
+            let modelName = "gemini-2.5-flash-preview-09-2025"; // 預覽環境專屬測試模型
+
+            // 如果偵測到使用了真實金鑰，自動切換為「正式公開版模型」，避免 404 Not Found 錯誤
+            if (USER_API_KEY && USER_API_KEY.startsWith("AIza")) {
+                apiKey = USER_API_KEY;
+                modelName = "gemini-1.5-flash"; 
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
             const base64Data = base64Image.split(',')[1];
             const prompt = `你是一位嚴格且專業的藝術評審。請根據以下三大指標評分（各項滿分100分）：
