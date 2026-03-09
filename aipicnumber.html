@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 藝術能量掃描儀</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #0f172a; color: white; overflow-x: hidden; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        
+        /* 掃描線動畫 */
+        .scanner-line {
+            position: absolute; width: 100%; height: 4px; background: #06b6d4;
+            box-shadow: 0 0 20px #06b6d4, 0 0 40px #06b6d4;
+            animation: scan 2s infinite linear; opacity: 0.8;
+        }
+        @keyframes scan {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+
+        /* 碎紙花特效 */
+        .confetti { position: absolute; width: 10px; height: 10px; background-color: #fcd34d; opacity: 0; }
+        @keyframes fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* 隱藏捲軸 */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-md mx-auto relative h-[850px] max-h-[90vh]">
+        
+        <!-- 畫面一：登入身分確認 -->
+        <div id="screen-login" class="absolute inset-0 flex flex-col items-center justify-center glass-panel rounded-3xl p-8 transition-opacity duration-500">
+            <div class="w-24 h-24 bg-cyan-500 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(6,182,212,0.6)] animate-pulse">
+                <i class="fas fa-fingerprint text-4xl text-white"></i>
+            </div>
+            <h1 class="text-3xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">能量掃描儀啟動</h1>
+            <p class="text-slate-400 mb-8 text-center">請輸入畫家代號以綁定作品</p>
+            
+            <div class="w-full space-y-4">
+                <div>
+                    <label class="block text-sm text-cyan-400 mb-1 ml-2">班級與座號 (例: 80105)</label>
+                    <input type="number" id="input-id" class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-6 py-4 text-xl focus:outline-none focus:border-cyan-500 transition-colors" placeholder="請輸入數字">
+                </div>
+                <div>
+                    <label class="block text-sm text-cyan-400 mb-1 ml-2">特級繪師大名</label>
+                    <input type="text" id="input-name" class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-6 py-4 text-xl focus:outline-none focus:border-cyan-500 transition-colors" placeholder="請輸入姓名">
+                </div>
+                <div id="login-error" class="hidden text-red-400 text-sm text-center font-bold">請輸入完整的座號與姓名！</div>
+                <button onclick="goToTheme()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-4 rounded-2xl text-xl mt-6 shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-transform active:scale-95">
+                    進入掃描艙 <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 畫面二：選擇挑戰主題 -->
+        <div id="screen-theme" class="absolute inset-0 flex flex-col glass-panel rounded-3xl p-6 transition-opacity duration-500 hidden opacity-0">
+            <button onclick="showScreen('screen-login')" class="self-start text-slate-400 hover:text-white mb-4"><i class="fas fa-chevron-left mr-2"></i>返回</button>
+            <h2 class="text-2xl font-black mb-6 text-cyan-400 text-center">選擇你的創作領域</h2>
+            
+            <div class="space-y-6 flex-1 overflow-y-auto pb-8 pr-2">
+                <!-- 群組 1：人物與角色 -->
+                <div>
+                    <h3 class="text-sm font-bold text-cyan-500 mb-3 flex items-center border-l-2 border-cyan-500 pl-2"><i class="fas fa-user-astronaut mr-2"></i>人物與角色</h3>
+                    <div class="space-y-3">
+                        <button onclick="selectTheme('熱血動漫人物')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 flex items-center transition-all active:scale-95 text-left group">
+                            <div class="w-14 h-14 bg-pink-500/20 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform shrink-0">
+                                <i class="fas fa-user-ninja text-2xl text-pink-500"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-white">熱血動漫人物</h4>
+                                <p class="text-xs text-slate-400">注重五官張力與肢體動態</p>
+                            </div>
+                        </button>
+                        <button onclick="selectTheme('奇幻角色設計')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 flex items-center transition-all active:scale-95 text-left group">
+                            <div class="w-14 h-14 bg-purple-500/20 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform shrink-0">
+                                <i class="fas fa-hat-wizard text-2xl text-purple-500"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-white">奇幻角色設計</h4>
+                                <p class="text-xs text-slate-400">精靈、獸人或魔法師等奇幻設定</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 群組 2：場景與世界 -->
+                <div>
+                    <h3 class="text-sm font-bold text-emerald-500 mb-3 flex items-center border-l-2 border-emerald-500 pl-2"><i class="fas fa-map-location-dot mr-2"></i>場景與世界</h3>
+                    <div class="space-y-3">
+                        <button onclick="selectTheme('絕美自然風景')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 flex items-center transition-all active:scale-95 text-left group">
+                            <div class="w-14 h-14 bg-emerald-500/20 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform shrink-0">
+                                <i class="fas fa-mountain-sun text-2xl text-emerald-500"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-white">絕美自然風景</h4>
+                                <p class="text-xs text-slate-400">注重空間層次與光影渲染</p>
+                            </div>
+                        </button>
+                        <button onclick="selectTheme('科幻未來城市')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 flex items-center transition-all active:scale-95 text-left group">
+                            <div class="w-14 h-14 bg-blue-500/20 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform shrink-0">
+                                <i class="fas fa-city text-2xl text-blue-500"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-white">科幻未來城市</h4>
+                                <p class="text-xs text-slate-400">賽博龐克或高科技都市建築</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 群組 3：生物與靜物 -->
+                <div>
+                    <h3 class="text-sm font-bold text-yellow-500 mb-3 flex items-center border-l-2 border-yellow-500 pl-2"><i class="fas fa-paw mr-2"></i>生物與靜物</h3>
+                    <div class="space-y-3">
+                        <button onclick="selectTheme('Q版可愛吉祥物')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 flex items-center transition-all active:scale-95 text-left group">
+                            <div class="w-14 h-14 bg-yellow-500/20 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform shrink-0">
+                                <i class="fas fa-cat text-2xl text-yellow-500"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-white">Q版可愛吉祥物</h4>
+                                <p class="text-xs text-slate-400">注重造型可愛度與鮮明度</p>
+                            </div>
+                        </button>
+                        <button onclick="selectTheme('帥氣幻獸與恐龍')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 flex items-center transition-all active:scale-95 text-left group">
+                            <div class="w-14 h-14 bg-orange-500/20 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform shrink-0">
+                                <i class="fas fa-dragon text-2xl text-orange-500"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-white">帥氣幻獸與恐龍</h4>
+                                <p class="text-xs text-slate-400">展現鱗片細節與生物張力</p>
+                            </div>
+                        </button>
+                        <button onclick="selectTheme('誘人美食插畫')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 flex items-center transition-all active:scale-95 text-left group">
+                            <div class="w-14 h-14 bg-red-500/20 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform shrink-0">
+                                <i class="fas fa-burger text-2xl text-red-500"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-white">誘人美食插畫</h4>
+                                <p class="text-xs text-slate-400">注重食物光澤與立體感</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 群組 4：創意與設計 -->
+                <div>
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center border-l-2 border-slate-300 pl-2"><i class="fas fa-palette mr-2"></i>創意與設計</h3>
+                    <div class="space-y-3">
+                        <button onclick="selectTheme('超酷機械與載具')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 flex items-center transition-all active:scale-95 text-left group">
+                            <div class="w-14 h-14 bg-slate-400/20 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform shrink-0">
+                                <i class="fas fa-robot text-2xl text-slate-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-white">超酷機械與載具</h4>
+                                <p class="text-xs text-slate-400">著重工業設計與金屬質感</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 畫面三：上傳與圓形裁切 -->
+        <div id="screen-crop" class="absolute inset-0 flex flex-col glass-panel rounded-3xl p-6 transition-opacity duration-500 hidden opacity-0">
+            <button onclick="showScreen('screen-theme')" class="self-start text-slate-400 hover:text-white mb-2"><i class="fas fa-chevron-left mr-2"></i>返回主題</button>
+            <h2 class="text-xl font-bold mb-1 text-center text-white" id="display-theme">主題</h2>
+            <p class="text-sm text-cyan-400 text-center mb-4">請移動並縮放圖片，對準胸章範圍</p>
+            
+            <!-- 裁切操作區 -->
+            <div class="relative w-full aspect-square bg-slate-900 rounded-2xl overflow-hidden mb-6 flex items-center justify-center touch-none border-2 border-slate-700" id="crop-area">
+                <!-- 預設上傳按鈕 -->
+                <label id="upload-label" class="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800/50 transition-colors z-20">
+                    <i class="fas fa-cloud-arrow-up text-5xl text-cyan-500 mb-4"></i>
+                    <span class="text-lg font-bold">點擊從相簿選取畫作</span>
+                    <input type="file" id="image-input" accept="image/*" class="hidden" onchange="loadImage(event)">
+                </label>
+
+                <!-- 圖片容器 -->
+                <img id="draggable-img" class="absolute top-0 left-0 hidden cursor-move" style="transform-origin: center;" draggable="false">
+                
+                <!-- 圓形遮罩 -->
+                <div id="circular-mask" class="absolute pointer-events-none hidden" style="box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.85); border-radius: 50%; border: 4px dashed #06b6d4; width: 80%; aspect-ratio: 1 / 1; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+            </div>
+
+            <!-- 縮放控制 -->
+            <div id="zoom-controls" class="hidden mb-6 px-4">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <i class="fas fa-image text-sm"></i>
+                    <span class="text-xs">調整大小</span>
+                    <i class="fas fa-image text-xl"></i>
+                </div>
+                <input type="range" id="zoom-slider" min="0.5" max="3" step="0.05" value="1" class="w-full accent-cyan-500">
+            </div>
+
+            <button id="btn-submit" onclick="submitToAI()" class="hidden w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 text-white font-bold py-4 rounded-2xl text-xl shadow-[0_0_20px_rgba(236,72,153,0.4)] transition-transform active:scale-95 mt-auto">
+                <i class="fas fa-microchip mr-2"></i> 鎖定構圖，送交 AI 鑑定
+            </button>
+        </div>
+
+        <!-- 畫面四：掃描等待中 -->
+        <div id="screen-loading" class="absolute inset-0 flex flex-col items-center justify-center glass-panel rounded-3xl p-6 transition-opacity duration-500 hidden opacity-0">
+            <h2 class="text-2xl font-black mb-8 text-cyan-400 animate-pulse">真實 AI 鑑定中...</h2>
+            
+            <div class="relative w-48 h-48 rounded-full overflow-hidden border-4 border-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.5)]">
+                <img id="preview-scan-img" class="w-full h-full object-cover">
+                <div class="scanner-line"></div>
+                <div class="absolute inset-0 bg-cyan-500/20 mix-blend-overlay"></div>
+            </div>
+
+            <div class="mt-8 h-8">
+                <p id="loading-text" class="text-slate-300 font-bold tracking-widest text-lg">正在上傳至評審伺服器...</p>
+            </div>
+        </div>
+
+        <!-- 畫面五：結果揭曉 / 錯誤畫面 -->
+        <div id="screen-result" class="absolute inset-0 flex flex-col items-center justify-start glass-panel rounded-3xl p-6 transition-opacity duration-500 hidden opacity-0 overflow-y-auto">
+            
+            <div class="flex w-full items-center justify-between mb-4 mt-2">
+                <!-- 稱號與圖片 -->
+                <div class="flex flex-col items-center w-1/2">
+                    <h2 id="result-title" class="text-lg font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 text-center leading-tight">稱號</h2>
+                    <div class="w-28 h-28 rounded-full border-4 border-slate-600 overflow-hidden shadow-2xl relative group">
+                        <img id="result-img" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 opacity-50"></div>
+                    </div>
+                </div>
+
+                <!-- 綜合總分 -->
+                <div class="relative w-1/2 flex flex-col items-center">
+                    <svg class="w-28 h-28 transform -rotate-90">
+                        <circle cx="56" cy="56" r="48" stroke="#1e293b" stroke-width="10" fill="none" />
+                        <circle id="score-ring" cx="56" cy="56" r="48" stroke="#06b6d4" stroke-width="10" fill="none" stroke-dasharray="301.6" stroke-dashoffset="301.6" class="transition-all duration-1500 ease-out" />
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span id="score-label" class="text-xs text-slate-400 mb-[-4px]">綜合評定</span>
+                        <span id="result-score" class="text-4xl font-black text-white">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 專業評分指標分析雷達 -->
+            <div id="score-bars-container" class="w-full bg-slate-800 rounded-2xl p-4 mb-4 space-y-3 border border-slate-700">
+                <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider text-center">AI 評分指標細項分析</h3>
+                
+                <!-- 1. 主題適切性 40% -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-cyan-400 font-bold">主題內容適切性 (40%)</span>
+                        <span id="score-theme" class="text-white font-bold">0</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-2">
+                        <div id="bar-theme" class="bg-cyan-500 h-2 rounded-full transition-all duration-1000 w-0"></div>
+                    </div>
+                </div>
+
+                <!-- 2. 創意構圖 40% -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-purple-400 font-bold">創意構圖與畫面結構 (40%)</span>
+                        <span id="score-comp" class="text-white font-bold">0</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-2">
+                        <div id="bar-comp" class="bg-purple-500 h-2 rounded-full transition-all duration-1000 w-0"></div>
+                    </div>
+                </div>
+
+                <!-- 3. 繪畫技巧與色彩 20% -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-emerald-400 font-bold">繪畫技巧與色彩運用 (20%)</span>
+                        <span id="score-tech" class="text-white font-bold">0</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-2">
+                        <div id="bar-tech" class="bg-emerald-500 h-2 rounded-full transition-all duration-1000 w-0"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 評語區塊 -->
+            <div class="w-full bg-slate-800 rounded-2xl p-4 mb-3 border-l-4 border-cyan-500" id="feedback-container">
+                <h3 class="text-sm font-bold text-cyan-400 mb-1" id="feedback-title"><i class="fas fa-comment-dots mr-1"></i> 教練講評</h3>
+                <p id="result-feedback" class="text-slate-200 text-xs leading-relaxed"></p>
+            </div>
+
+            <div class="w-full bg-slate-800 rounded-2xl p-4 mb-6 border-l-4 border-pink-500" id="advice-container">
+                <h3 class="text-sm font-bold text-pink-400 mb-1" id="advice-title"><i class="fas fa-lightbulb mr-1"></i> 修煉建議</h3>
+                <p id="result-advice" class="text-slate-200 text-xs leading-relaxed"></p>
+            </div>
+
+            <!-- 動作按鈕 -->
+            <div id="action-success" class="w-full hidden mt-auto pb-4 shrink-0">
+                <p class="text-center text-yellow-400 font-bold mb-3 animate-pulse text-sm"><i class="fas fa-star mr-1"></i> 恭喜獲得實體胸章製作資格！</p>
+                <button onclick="resetApp()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-4 rounded-2xl text-xl shadow-lg active:scale-95 transition-transform">
+                    完成存檔並返回首頁
+                </button>
+            </div>
+
+            <div id="action-retry" class="w-full hidden mt-auto pb-4 shrink-0">
+                <p id="retry-message" class="text-center text-slate-400 font-bold mb-3 text-sm">差一點就能做成胸章了！</p>
+                <button onclick="showScreen('screen-crop')" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-2xl text-xl shadow-lg active:scale-95 transition-transform">
+                    <i class="fas fa-undo mr-2"></i> 返回畫布重新挑戰
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // === 應用程式狀態 ===
+        let appData = {
+            studentId: '',
+            studentName: '',
+            theme: '',
+            croppedImageBase64: ''
+        };
+
+        // === 畫面切換邏輯 ===
+        function showScreen(screenId) {
+            document.querySelectorAll('#app > div').forEach(el => {
+                el.classList.add('hidden', 'opacity-0');
+            });
+            const target = document.getElementById(screenId);
+            target.classList.remove('hidden');
+            setTimeout(() => target.classList.remove('opacity-0'), 10);
+        }
+
+        function goToTheme() {
+            const id = document.getElementById('input-id').value;
+            const name = document.getElementById('input-name').value;
+            const errorMsg = document.getElementById('login-error');
+            
+            if(!id || !name) {
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+            errorMsg.classList.add('hidden');
+            appData.studentId = id;
+            appData.studentName = name;
+            showScreen('screen-theme');
+        }
+
+        function selectTheme(themeName) {
+            appData.theme = themeName;
+            document.getElementById('display-theme').innerText = `挑戰主題：${themeName}`;
+            showScreen('screen-crop');
+        }
+
+        // === 圖片裁切互動邏輯 ===
+        const imgEl = document.getElementById('draggable-img');
+        const cropArea = document.getElementById('crop-area');
+        const zoomSlider = document.getElementById('zoom-slider');
+        let imgState = { x: 0, y: 0, scale: 1, baseWidth: 0, baseHeight: 0 };
+        let dragState = { isDragging: false, startX: 0, startY: 0, initialImgX: 0, initialImgY: 0 };
+
+        function loadImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imgEl.src = e.target.result;
+                imgEl.onload = () => {
+                    document.getElementById('upload-label').classList.add('hidden');
+                    imgEl.classList.remove('hidden');
+                    document.getElementById('circular-mask').classList.remove('hidden');
+                    document.getElementById('zoom-controls').classList.remove('hidden');
+                    document.getElementById('btn-submit').classList.remove('hidden');
+                    
+                    const areaSize = cropArea.clientWidth;
+                    const imgRatio = imgEl.naturalWidth / imgEl.naturalHeight;
+                    
+                    if (imgRatio > 1) { 
+                        imgState.baseHeight = areaSize;
+                        imgState.baseWidth = areaSize * imgRatio;
+                    } else { 
+                        imgState.baseWidth = areaSize;
+                        imgState.baseHeight = areaSize / imgRatio;
+                    }
+                    
+                    imgState.scale = 1;
+                    imgState.x = (areaSize - imgState.baseWidth) / 2;
+                    imgState.y = (areaSize - imgState.baseHeight) / 2;
+                    zoomSlider.value = 1;
+                    updateImageTransform();
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateImageTransform() {
+            imgEl.style.width = `${imgState.baseWidth}px`;
+            imgEl.style.height = `${imgState.baseHeight}px`;
+            imgEl.style.transform = `translate(${imgState.x}px, ${imgState.y}px) scale(${imgState.scale})`;
+        }
+
+        zoomSlider.addEventListener('input', (e) => {
+            imgState.scale = parseFloat(e.target.value);
+            updateImageTransform();
+        });
+
+        function startDrag(e) {
+            e.preventDefault();
+            dragState.isDragging = true;
+            dragState.startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            dragState.startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            dragState.initialImgX = imgState.x;
+            dragState.initialImgY = imgState.y;
+        }
+
+        function doDrag(e) {
+            if (!dragState.isDragging) return;
+            e.preventDefault();
+            const currentX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const currentY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            const dx = currentX - dragState.startX;
+            const dy = currentY - dragState.startY;
+            
+            imgState.x = dragState.initialImgX + dx;
+            imgState.y = dragState.initialImgY + dy;
+            updateImageTransform();
+        }
+
+        function stopDrag() { dragState.isDragging = false; }
+
+        cropArea.addEventListener('mousedown', startDrag);
+        cropArea.addEventListener('touchstart', startDrag, {passive: false});
+        window.addEventListener('mousemove', doDrag);
+        window.addEventListener('touchmove', doDrag, {passive: false});
+        window.addEventListener('mouseup', stopDrag);
+        window.addEventListener('touchend', stopDrag);
+
+        async function submitToAI() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const size = 500; 
+            canvas.width = size;
+            canvas.height = size;
+
+            const maskRect = document.getElementById('circular-mask').getBoundingClientRect();
+            const imgRect = imgEl.getBoundingClientRect();
+
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+
+            const scaleToCanvas = size / maskRect.width;
+            
+            const dx = (imgRect.left - maskRect.left) * scaleToCanvas;
+            const dy = (imgRect.top - maskRect.top) * scaleToCanvas;
+            const dw = imgRect.width * scaleToCanvas;
+            const dh = imgRect.height * scaleToCanvas;
+            
+            ctx.drawImage(imgEl, dx, dy, dw, dh);
+
+            appData.croppedImageBase64 = canvas.toDataURL('image/png');
+            
+            document.getElementById('preview-scan-img').src = appData.croppedImageBase64;
+            showScreen('screen-loading');
+
+            const texts = ["正在分析主題適切性...", "正在解析賓主關係與結構...", "正在比對明暗與渲染技巧...", "正在彙整專業 AI 評語..."];
+            let tIdx = 0;
+            const tInterval = setInterval(() => {
+                tIdx = (tIdx + 1) % texts.length;
+                document.getElementById('loading-text').innerText = texts[tIdx];
+            }, 2000);
+
+            try {
+                // 強制執行真實 AI 視覺鑑定，無任何隨機給分妥協
+                const aiResult = await analyzeWithGemini(appData.croppedImageBase64, appData.theme);
+                clearInterval(tInterval);
+
+                const finalScore = Math.round((aiResult.themeScore * 0.4) + (aiResult.compScore * 0.4) + (aiResult.techScore * 0.2));
+                displayResult(finalScore, aiResult);
+            } catch (error) {
+                clearInterval(tInterval);
+                
+                // 真實連線錯誤處理：顯示誠實的錯誤 UI，絕不寫入假成績
+                const errorResult = {
+                    themeScore: 0,
+                    compScore: 0,
+                    techScore: 0,
+                    title: "連線中斷",
+                    feedback: "無法取得真實 AI 評審的回應。\n詳細錯誤：" + error.message,
+                    advice: "請確認您的網路連線狀態，或稍等幾分鐘後再重新挑戰！"
+                };
+                displayResult(-1, errorResult); // 傳入 -1 代表這是一次失敗的連線
+            }
+        }
+
+        // === 嚴格版真實 AI 視覺辨識引擎 ===
+        async function analyzeWithGemini(base64Image, theme) {
+            const apiKey = "AIzaSyAQ4OTgGgMSD8QV1rH9a4oqUesZh0q_YCs"; // 執行環境會自動提供金鑰
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            const base64Data = base64Image.split(',')[1];
+            const prompt = `你是一位嚴格且專業的藝術評審。請根據以下三大指標評分（各項滿分100分）：
+1. 主題內容適切性 (40%)
+2. 創意構圖與畫面結構 (40%)
+3. 繪畫技巧與色彩運用 (20%)
+
+使用者選擇的挑戰主題是：「${theme}」。
+【重要任務】：請「仔細觀察圖片內容」是否符合使用者選擇的主題！
+- 如果圖片內容明顯與主題不符（例如：畫面是Q版人物、動物或毫無關聯的東西，但主題卻選了「風景」或「機械」），請在「themeScore」給予極低分（0-20分），並在 feedback 中無情點出「完全文不對題」。
+- 如果圖片符合主題，請依照畫面結構與繪畫技巧正常給予評分。`;
+
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: prompt },
+                        { inlineData: { mimeType: "image/png", data: base64Data } }
+                    ]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            themeScore: { type: "INTEGER" },
+                            compScore: { type: "INTEGER" },
+                            techScore: { type: "INTEGER" },
+                            title: { type: "STRING" },
+                            feedback: { type: "STRING" },
+                            advice: { type: "STRING" }
+                        }
+                    }
+                }
+            };
+
+            let retries = 5;
+            let delay = 1000;
+            
+            // 指數退避重試演算法 (1s, 2s, 4s, 8s, 16s)
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, { 
+                        method: 'POST', 
+                        body: JSON.stringify(payload), 
+                        headers: { 'Content-Type': 'application/json' } 
+                    });
+                    
+                    if (!response.ok) {
+                        const responseText = await response.text();
+                        throw new Error(`伺服器錯誤狀態 ${response.status}: ${responseText}`);
+                    }
+
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (!text) {
+                        throw new Error("API 回傳資料格式異常（內容為空）");
+                    }
+                    
+                    return JSON.parse(text);
+                    
+                } catch (e) {
+                    if (i === retries - 1) {
+                        // 如果 5 次全敗，則真實拋出錯誤，讓外層顯示「連線中斷」 UI
+                        throw new Error(`重試 ${retries} 次後依然無法連線。(${e.message})`);
+                    }
+                    await new Promise(r => setTimeout(r, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        // === 顯示結果與特效 ===
+        function displayResult(score, data) {
+            showScreen('screen-result');
+            document.getElementById('result-img').src = appData.croppedImageBase64;
+            document.getElementById('result-title').innerText = data.title;
+            document.getElementById('result-feedback').innerText = data.feedback;
+            document.getElementById('result-advice').innerText = data.advice;
+            
+            const isError = score === -1;
+
+            if (isError) {
+                // 處理錯誤 UI 狀態：隱藏分數環與能量條，改變標題顏色
+                document.getElementById('result-title').classList.replace('from-yellow-400', 'from-red-400');
+                document.getElementById('result-title').classList.replace('to-orange-500', 'to-red-600');
+                document.getElementById('score-bars-container').classList.add('hidden');
+                document.getElementById('score-ring').style.stroke = '#ef4444'; // 紅色環
+                document.getElementById('result-score').innerText = "!";
+                document.getElementById('result-score').style.color = '#ef4444';
+                document.getElementById('score-label').innerText = "系統異常";
+                document.getElementById('feedback-title').innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i> 錯誤診斷';
+                document.getElementById('advice-title').innerHTML = '<i class="fas fa-tools mr-1"></i> 建議排除方式';
+                document.getElementById('feedback-container').classList.replace('border-cyan-500', 'border-red-500');
+                document.getElementById('advice-container').classList.replace('border-pink-500', 'border-red-500');
+                
+                document.getElementById('retry-message').innerText = "請稍後重新啟動掃描！";
+                document.getElementById('action-retry').classList.remove('hidden');
+                return;
+            }
+
+            // 恢復正常 UI 狀態
+            document.getElementById('result-title').classList.replace('from-red-400', 'from-yellow-400');
+            document.getElementById('result-title').classList.replace('to-red-600', 'to-orange-500');
+            document.getElementById('score-bars-container').classList.remove('hidden');
+            document.getElementById('score-label').innerText = "綜合評定";
+            document.getElementById('feedback-title').innerHTML = '<i class="fas fa-comment-dots mr-1"></i> 教練講評';
+            document.getElementById('advice-title').innerHTML = '<i class="fas fa-lightbulb mr-1"></i> 修煉建議';
+            document.getElementById('feedback-container').classList.replace('border-red-500', 'border-cyan-500');
+            document.getElementById('advice-container').classList.replace('border-red-500', 'border-pink-500');
+
+            // 動畫填充分數環
+            setTimeout(() => {
+                const ring = document.getElementById('score-ring');
+                const circumference = 301.6; // 2 * pi * r (48)
+                const offset = circumference - (score / 100) * circumference;
+                ring.style.strokeDashoffset = offset;
+                ring.style.stroke = score >= 85 ? '#f59e0b' : '#06b6d4'; // 達標變金色
+                
+                // 數字跳動特效 (總分)
+                let currentScore = 0;
+                const scoreEl = document.getElementById('result-score');
+                const scoreInterval = setInterval(() => {
+                    currentScore += 2;
+                    if(currentScore >= score) {
+                        currentScore = score;
+                        clearInterval(scoreInterval);
+                        
+                        if(score >= 85) {
+                            document.getElementById('action-success').classList.remove('hidden');
+                            document.getElementById('action-retry').classList.add('hidden');
+                            fireConfetti();
+                        } else {
+                            document.getElementById('retry-message').innerText = "差一點就能做成胸章了！";
+                            document.getElementById('action-retry').classList.remove('hidden');
+                            document.getElementById('action-success').classList.add('hidden');
+                        }
+                    }
+                    scoreEl.innerText = currentScore;
+                    scoreEl.style.color = currentScore >= 85 ? '#fcd34d' : 'white';
+                }, 20);
+
+                // 動畫填充細項能量條
+                animateBar('score-theme', 'bar-theme', data.themeScore);
+                animateBar('score-comp', 'bar-comp', data.compScore);
+                animateBar('score-tech', 'bar-tech', data.techScore);
+
+            }, 300);
+        }
+
+        // 細項能量條動畫函數
+        function animateBar(textId, barId, targetScore) {
+            const bar = document.getElementById(barId);
+            const text = document.getElementById(textId);
+            bar.style.width = targetScore + '%';
+            
+            let current = 0;
+            if (targetScore === 0) {
+                text.innerText = 0;
+                return;
+            }
+
+            const interval = setInterval(() => {
+                current += 2;
+                if(current >= targetScore) {
+                    current = targetScore;
+                    clearInterval(interval);
+                }
+                text.innerText = current;
+            }, 20);
+        }
+
+        // 碎紙花特效
+        function fireConfetti() {
+            const colors = ['#fcd34d', '#34d399', '#60a5fa', '#f472b6', '#a78bfa'];
+            for(let i=0; i<50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animation = `fall ${Math.random() * 2 + 1}s linear forwards`;
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+        function resetApp() {
+            appData.croppedImageBase64 = '';
+            document.getElementById('upload-label').classList.remove('hidden');
+            imgEl.classList.add('hidden');
+            document.getElementById('circular-mask').classList.add('hidden');
+            document.getElementById('zoom-controls').classList.add('hidden');
+            document.getElementById('btn-submit').classList.add('hidden');
+            
+            // 重置 UI 狀態
+            document.getElementById('score-ring').style.strokeDashoffset = 301.6;
+            document.getElementById('result-score').innerText = '0';
+            document.getElementById('bar-theme').style.width = '0%';
+            document.getElementById('bar-comp').style.width = '0%';
+            document.getElementById('bar-tech').style.width = '0%';
+            document.getElementById('score-theme').innerText = '0';
+            document.getElementById('score-comp').innerText = '0';
+            document.getElementById('score-tech').innerText = '0';
+
+            document.getElementById('action-success').classList.add('hidden');
+            document.getElementById('action-retry').classList.add('hidden');
+            
+            showScreen('screen-theme');
+        }
+    </script>
+</body>
+</html>
