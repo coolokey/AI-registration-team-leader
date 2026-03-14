@@ -2,33 +2,45 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>AI Badge Scanner - Gemini</title>
+<title>AI Quantum Badge Scanner</title>
 
 <style>
 
 body{
-background:#030712;
-color:#00f7ff;
+background:#020617;
+color:#00F5FF;
 font-family:Arial;
 text-align:center;
 margin:0;
+overflow-x:hidden;
 }
 
 h1{
-letter-spacing:3px;
 margin-top:20px;
+letter-spacing:4px;
+text-shadow:0 0 10px cyan;
 }
 
 #scanner{
+
 width:420px;
 height:420px;
-margin:20px auto;
+
+margin:30px auto;
+
 border-radius:50%;
 overflow:hidden;
-border:3px solid cyan;
+
+border:3px solid #00F5FF;
+
 position:relative;
-box-shadow:0 0 25px cyan;
+
+box-shadow:
+0 0 10px #00F5FF,
+0 0 40px #00F5FF;
+
 background:black;
+
 }
 
 #img{
@@ -38,39 +50,112 @@ cursor:grab;
 }
 
 .scanline{
+
 position:absolute;
 width:100%;
 height:4px;
-background:cyan;
+
+background:linear-gradient(
+to right,
+transparent,
+cyan,
+transparent
+);
+
 animation:scan 3s linear infinite;
+
 }
 
 @keyframes scan{
+
 0%{top:0}
 100%{top:100%}
+
+}
+
+.hud-ring{
+
+position:absolute;
+border:1px solid cyan;
+border-radius:50%;
+animation:rotate 20s linear infinite;
+
+}
+
+@keyframes rotate{
+
+from{transform:rotate(0deg)}
+to{transform:rotate(360deg)}
+
+}
+
+#ring1{
+
+width:380px;
+height:380px;
+top:20px;
+left:20px;
+
+}
+
+#ring2{
+
+width:300px;
+height:300px;
+top:60px;
+left:60px;
+
+animation-direction:reverse;
+
 }
 
 button{
-padding:10px 20px;
+
+padding:10px 22px;
 margin:10px;
+
 border:none;
+
 background:cyan;
 color:black;
+
 font-weight:bold;
+
 cursor:pointer;
-border-radius:5px;
+
+border-radius:6px;
+
+box-shadow:0 0 10px cyan;
+
+}
+
+button:hover{
+
+background:#00ffff;
+
 }
 
 canvas{
+
 margin-top:20px;
+
 }
 
 #result{
-width:600px;
+
+width:700px;
 margin:auto;
+
 margin-top:20px;
+
 font-size:18px;
+
 line-height:1.6;
+
+}
+
+*{
+user-select:none;
 }
 
 </style>
@@ -79,7 +164,7 @@ line-height:1.6;
 
 <body>
 
-<h1>AI 胸章掃描系統</h1>
+<h1>AI QUANTUM BADGE SCANNER</h1>
 
 <input type="file" id="upload">
 
@@ -89,14 +174,15 @@ line-height:1.6;
 
 <div class="scanline"></div>
 
+<div class="hud-ring" id="ring1"></div>
+<div class="hud-ring" id="ring2"></div>
+
 </div>
 
 <div>
 
 <button onclick="scan()">AI 掃描</button>
-
 <button onclick="download()">下載胸章</button>
-
 <button onclick="reset()">重新開始</button>
 
 </div>
@@ -165,6 +251,7 @@ img.style.transform=
 img.onmousedown=e=>{
 
 dragging=true
+
 startX=e.clientX-posX
 startY=e.clientY-posY
 
@@ -237,7 +324,7 @@ document.getElementById("badge")
 
 const result = await model.generateContent([
 
-"分析照片人物氣質並給五項能力評分（0-100）：創造力、領導力、邏輯力、合作力、表達力。請回傳 JSON",
+"請分析照片人物氣質，並以JSON給五項能力評分(0-100)：創造力、領導力、邏輯力、合作力、表達力，同時給100字評語",
 
 {
 inlineData:{
@@ -248,19 +335,24 @@ data:imageBase64
 
 ])
 
-const text=result.response.text()
+let text=result.response.text()
 
 document.getElementById("result").innerText=text
 
 try{
 
-let json=JSON.parse(text)
+let jsonStart=text.indexOf("{")
+let jsonEnd=text.lastIndexOf("}")
 
-drawRadar(json)
+let jsonText=text.substring(jsonStart,jsonEnd+1)
+
+let data=JSON.parse(jsonText)
+
+drawRadar(data)
 
 }catch(e){
 
-console.log("AI回傳格式非JSON")
+console.log("AI JSON解析失敗")
 
 }
 
@@ -319,7 +411,7 @@ else ctx.lineTo(x,y)
 
 ctx.closePath()
 
-ctx.fillStyle="rgba(0,255,255,0.3)"
+ctx.fillStyle="rgba(0,255,255,0.35)"
 ctx.fill()
 
 ctx.stroke()
@@ -330,10 +422,10 @@ function download(){
 
 let link=document.createElement("a")
 
-link.download="badge.png"
+link.download="AI_badge.png"
 
-link.href=document
-.getElementById("badge")
+link.href=
+document.getElementById("badge")
 .toDataURL()
 
 link.click()
