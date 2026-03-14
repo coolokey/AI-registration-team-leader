@@ -514,14 +514,20 @@
 
         // === 嚴格版真實 AI 視覺辨識引擎 ===
         async function analyzeWithGemini(base64Image, theme) {
-            // 使用者在首頁親自輸入的金鑰
-            const apiKey = appData.apiKey; 
+            let apiKey = appData.apiKey; 
+            let modelName = "gemini-1.5-flash"; // 預設正式公開模型
             
-            // 智慧環境判斷邏輯
-            let modelName = "gemini-2.5-flash-preview-09-2025"; // 預設：預覽沙盒專用模型
-            if (apiKey) {
-                // 若有輸入金鑰，代表已經脫離沙盒（本機端執行），自動切換為正式公開模型，避免 404
-                modelName = "gemini-1.5-flash"; 
+            // 【關鍵修正：智慧偵測環境】
+            // 由於此右側預覽沙盒有極嚴格的防火牆，會強制攔截正式版模型並回報 404。
+            // 所以加上環境偵測，只要在預覽區 (usercontent) 就自動切換為內建通道。
+            // 下載到您的電腦或學校伺服器執行時，這道限制就會解除，順利使用您輸入的金鑰與正式版模型！
+            if (window.location.hostname.includes("usercontent")) {
+                apiKey = ""; 
+                modelName = "gemini-2.5-flash-preview-09-2025"; 
+                console.log("偵測到預覽沙盒環境，已強制切換為內建通道，避免 404 錯誤。");
+            } else if (!apiKey) {
+                // 若在本機執行但未輸入金鑰，給予明確錯誤提示
+                throw new Error("請先返回首頁，輸入您的 Gemini API 金鑰！");
             }
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
