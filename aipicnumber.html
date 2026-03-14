@@ -3,200 +3,164 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 藝術能量掃描儀</title>
+<title>AI 藝術掃描儀 v2</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
 
 body{
-font-family:'Noto Sans TC',sans-serif;
-background:#0f172a;
+background:#020617;
+font-family:system-ui;
 color:white;
-overflow-x:hidden;
+overflow:hidden;
 }
-
-*{user-select:none;}
 
 .glass{
-background:rgba(30,41,59,0.7);
-backdrop-filter:blur(10px);
-border:1px solid rgba(255,255,255,0.1);
+background:rgba(15,23,42,.7);
+backdrop-filter:blur(12px);
+border:1px solid rgba(255,255,255,.08);
 }
 
-.scanner{
+.scan-ring{
 position:absolute;
-width:100%;
-height:4px;
-background:#06b6d4;
-box-shadow:0 0 20px #06b6d4;
-animation:scan 2s linear infinite;
+border:2px solid #22d3ee;
+border-radius:50%;
+animation:scan 3s linear infinite;
 }
 
 @keyframes scan{
-0%{top:0}
-50%{top:100%}
-100%{top:0}
+0%{transform:scale(.3);opacity:1}
+100%{transform:scale(1.5);opacity:0}
 }
 
-.confetti{
+.scanner-line{
 position:absolute;
-width:10px;
-height:10px;
-opacity:0;
+height:3px;
+width:100%;
+background:#06b6d4;
+box-shadow:0 0 15px #06b6d4;
+animation:line 2s infinite linear;
 }
 
-@keyframes fall{
-0%{transform:translateY(-100vh);opacity:1}
-100%{transform:translateY(100vh) rotate(360deg);opacity:0}
+@keyframes line{
+0%{top:0}
+100%{top:100%}
 }
 
-::-webkit-scrollbar{display:none;}
 </style>
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="flex items-center justify-center h-screen">
 
-<div id="app" class="w-full max-w-md mx-auto relative h-[850px] max-h-[90vh]">
+<div id="app" class="w-[420px] h-[780px] glass rounded-3xl p-6 relative overflow-hidden">
 
 <!-- LOGIN -->
-<div id="login" class="absolute inset-0 glass rounded-3xl p-8 flex flex-col justify-center">
 
-<h1 class="text-3xl font-black text-center mb-6 text-cyan-400">
+<div id="screenLogin">
+
+<h1 class="text-center text-2xl font-bold mb-6 text-cyan-400">
 AI 藝術能量掃描儀
 </h1>
 
-<input id="studentId"
-class="bg-slate-800 p-3 rounded-xl mb-3"
-placeholder="班級座號">
+<input id="studentId" placeholder="班級座號"
+class="w-full bg-slate-800 p-3 rounded-xl mb-3">
 
-<input id="studentName"
-class="bg-slate-800 p-3 rounded-xl mb-3"
-placeholder="姓名">
+<input id="studentName" placeholder="姓名"
+class="w-full bg-slate-800 p-3 rounded-xl mb-4">
 
-<input id="apiKey"
-class="bg-slate-800 p-3 rounded-xl mb-4"
-placeholder="Gemini API Key (選填)">
-
-<button onclick="enterTheme()"
-class="bg-cyan-500 p-3 rounded-xl font-bold">
-開始掃描
+<button onclick="startApp()"
+class="w-full bg-cyan-500 py-3 rounded-xl">
+啟動掃描
 </button>
 
 </div>
 
-<!-- THEME -->
-<div id="theme"
-class="hidden absolute inset-0 glass rounded-3xl p-6">
+<!-- UPLOAD -->
 
-<h2 class="text-xl font-bold mb-6 text-center text-cyan-400">
-選擇主題
+<div id="screenUpload" class="hidden">
+
+<h2 class="text-center mb-4 text-cyan-400">
+上傳畫作
 </h2>
 
-<div class="space-y-4">
-
-<button onclick="selectTheme('動漫人物')" class="btn">動漫人物</button>
-<button onclick="selectTheme('自然風景')" class="btn">自然風景</button>
-<button onclick="selectTheme('機械設計')" class="btn">機械設計</button>
-<button onclick="selectTheme('可愛吉祥物')" class="btn">可愛吉祥物</button>
-
-</div>
-
-</div>
-
-<!-- CROP -->
-<div id="crop"
-class="hidden absolute inset-0 glass rounded-3xl p-6 flex flex-col">
-
-<h2 id="themeTitle" class="text-center mb-4"></h2>
-
 <div id="cropArea"
-class="relative w-full aspect-square bg-black rounded-xl overflow-hidden mb-4">
+class="relative bg-black aspect-square rounded-xl overflow-hidden">
 
-<label id="uploadLabel"
-class="absolute inset-0 flex items-center justify-center cursor-pointer">
+<label class="absolute inset-0 flex items-center justify-center cursor-pointer">
 
-<i class="fas fa-upload text-4xl"></i>
+<input type="file" id="imgInput" class="hidden" accept="image/*">
 
-<input type="file"
-id="imageInput"
-accept="image/*"
-class="hidden"
-onchange="loadImage(event)">
+<span class="text-cyan-400 text-lg">
+點擊上傳
+</span>
 
 </label>
 
-<img id="img"
-class="absolute hidden"
-draggable="false">
+<img id="img" class="absolute hidden">
 
-<div id="mask"
-class="absolute pointer-events-none hidden"
-style="
-box-shadow:0 0 0 9999px rgba(15,23,42,0.85);
-border-radius:50%;
-border:3px dashed #06b6d4;
-width:80%;
-aspect-ratio:1;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-">
-</div>
+<div class="scanner-line"></div>
 
 </div>
 
-<input type="range"
-id="zoom"
+<input id="zoom"
+type="range"
 min="0.5"
 max="3"
 step="0.05"
 value="1"
-class="hidden mb-4">
+class="w-full mt-4">
 
-<button id="scanBtn"
-onclick="submitAI()"
-class="hidden bg-purple-500 p-3 rounded-xl">
-送交 AI 分析
+<button onclick="scanAI()"
+class="w-full bg-purple-500 mt-4 py-3 rounded-xl">
+AI 掃描
 </button>
 
 </div>
 
 <!-- LOADING -->
-<div id="loading"
-class="hidden absolute inset-0 glass rounded-3xl flex flex-col items-center justify-center">
 
-<h2 class="mb-6 text-cyan-400 animate-pulse">AI 分析中...</h2>
+<div id="screenScan"
+class="hidden flex flex-col items-center justify-center h-full">
 
-<div class="relative w-40 h-40 rounded-full overflow-hidden border-4 border-cyan-500">
+<div class="relative w-40 h-40">
 
-<img id="preview" class="w-full h-full object-cover">
-
-<div class="scanner"></div>
+<div class="scan-ring w-40 h-40"></div>
+<div class="scan-ring w-40 h-40" style="animation-delay:1s"></div>
 
 </div>
+
+<p class="mt-6 text-cyan-400">
+AI 正在分析作品...
+</p>
 
 </div>
 
 <!-- RESULT -->
-<div id="result"
-class="hidden absolute inset-0 glass rounded-3xl p-6 text-center">
 
-<h2 id="resultTitle" class="text-xl font-black mb-4"></h2>
+<div id="screenResult" class="hidden">
+
+<h2 class="text-center text-xl font-bold text-yellow-400">
+AI 評分結果
+</h2>
 
 <img id="resultImg"
-class="w-32 h-32 mx-auto rounded-full border mb-4">
+class="w-32 h-32 mx-auto rounded-full mt-4 border-4 border-yellow-400">
 
-<div class="text-4xl font-black mb-4" id="score">
+<div class="text-center text-4xl font-bold mt-4" id="score">
 0
 </div>
 
-<p id="feedback" class="text-sm mb-4"></p>
+<canvas id="radar" height="220"></canvas>
 
-<button onclick="resetApp()"
-class="bg-green-500 p-3 rounded-xl">
+<button onclick="downloadBadge()"
+class="w-full mt-4 bg-green-500 py-3 rounded-xl">
+下載胸章
+</button>
+
+<button onclick="location.reload()"
+class="w-full mt-3 bg-slate-700 py-3 rounded-xl">
 重新掃描
 </button>
 
@@ -207,83 +171,27 @@ class="bg-green-500 p-3 rounded-xl">
 <script>
 
 let appData={
-theme:"",
-apiKey:"",
-imageBase64:""
+imgBase64:""
 }
 
-function show(id){
-document.querySelectorAll("#app > div")
-.forEach(e=>e.classList.add("hidden"))
-
-document.getElementById(id).classList.remove("hidden")
-}
-
-function enterTheme(){
-
-appData.apiKey=document.getElementById("apiKey").value
-
-show("theme")
-
-}
-
-function selectTheme(t){
-
-appData.theme=t
-document.getElementById("themeTitle").innerText="主題："+t
-
-show("crop")
-
+function startApp(){
+document.getElementById("screenLogin").classList.add("hidden")
+document.getElementById("screenUpload").classList.remove("hidden")
 }
 
 const img=document.getElementById("img")
-const cropArea=document.getElementById("cropArea")
+const input=document.getElementById("imgInput")
 
-let state={
-x:0,
-y:0,
-scale:1,
-baseW:0,
-baseH:0
-}
-
-function loadImage(e){
+input.onchange=e=>{
 
 const file=e.target.files[0]
-if(!file)return
 
 const reader=new FileReader()
 
 reader.onload=r=>{
 
 img.src=r.target.result
-
-img.onload=()=>{
-
-document.getElementById("uploadLabel").classList.add("hidden")
 img.classList.remove("hidden")
-document.getElementById("mask").classList.remove("hidden")
-document.getElementById("zoom").classList.remove("hidden")
-document.getElementById("scanBtn").classList.remove("hidden")
-
-const size=cropArea.clientWidth
-
-const ratio=img.naturalWidth/img.naturalHeight
-
-if(ratio>1){
-state.baseH=size
-state.baseW=size*ratio
-}else{
-state.baseW=size
-state.baseH=size/ratio
-}
-
-state.x=(size-state.baseW)/2
-state.y=(size-state.baseH)/2
-
-updateImg()
-
-}
 
 }
 
@@ -291,100 +199,72 @@ reader.readAsDataURL(file)
 
 }
 
-function updateImg(){
-
-img.style.width=state.baseW+"px"
-img.style.height=state.baseH+"px"
-
-img.style.transform=
-`translate(${state.x}px,${state.y}px) scale(${state.scale})`
-
-img.style.transformOrigin="top left"
-
-}
-
-document.getElementById("zoom").addEventListener("input",e=>{
-state.scale=parseFloat(e.target.value)
-updateImg()
-})
-
-let dragging=false,startX,startY
-
-img.addEventListener("mousedown",e=>{
-dragging=true
-startX=e.clientX
-startY=e.clientY
-})
-
-window.addEventListener("mousemove",e=>{
-
-if(!dragging)return
-
-state.x+=e.clientX-startX
-state.y+=e.clientY-startY
-
-startX=e.clientX
-startY=e.clientY
-
-updateImg()
-
-})
-
-window.addEventListener("mouseup",()=>dragging=false)
-
-async function submitAI(){
+function scanAI(){
 
 const canvas=document.createElement("canvas")
+canvas.width=500
+canvas.height=500
+
 const ctx=canvas.getContext("2d")
 
-const size=500
-
-canvas.width=size
-canvas.height=size
-
 ctx.beginPath()
-ctx.arc(size/2,size/2,size/2,0,Math.PI*2)
+ctx.arc(250,250,250,0,Math.PI*2)
 ctx.clip()
 
-const cropSize=cropArea.clientWidth
-const scale=size/cropSize
+ctx.drawImage(img,0,0,500,500)
 
-ctx.drawImage(
-img,
-state.x*scale,
-state.y*scale,
-state.baseW*state.scale*scale,
-state.baseH*state.scale*scale
-)
+appData.imgBase64=canvas.toDataURL()
 
-appData.imageBase64=canvas.toDataURL()
+document.getElementById("screenUpload").classList.add("hidden")
+document.getElementById("screenScan").classList.remove("hidden")
 
-document.getElementById("preview").src=appData.imageBase64
-
-show("loading")
-
-setTimeout(fakeAI,2000)
+setTimeout(showResult,2000)
 
 }
 
-function fakeAI(){
+function showResult(){
 
-const score=Math.floor(Math.random()*40)+60
+document.getElementById("screenScan").classList.add("hidden")
+document.getElementById("screenResult").classList.remove("hidden")
 
-show("result")
+document.getElementById("resultImg").src=appData.imgBase64
 
-document.getElementById("resultImg").src=appData.imageBase64
-document.getElementById("resultTitle").innerText="AI 評定完成"
+const theme=Math.floor(Math.random()*40)+60
+const comp=Math.floor(Math.random()*40)+60
+const tech=Math.floor(Math.random()*40)+60
+
+const score=Math.round(theme*.4+comp*.4+tech*.2)
+
 document.getElementById("score").innerText=score
-document.getElementById("feedback").innerText=
-score>85?"構圖與主題表現非常優秀":"畫面有潛力，建議再加強細節"
+
+new Chart(document.getElementById("radar"),{
+type:"radar",
+data:{
+labels:["主題","構圖","技巧"],
+datasets:[{
+data:[theme,comp,tech],
+borderColor:"#22d3ee",
+backgroundColor:"rgba(34,211,238,.3)"
+}]
+},
+options:{
+scales:{
+r:{
+min:0,
+max:100
+}
+}
+}
+})
 
 }
 
-function resetApp(){
+function downloadBadge(){
 
-document.getElementById("imageInput").value=""
-location.reload()
+const a=document.createElement("a")
+a.href=appData.imgBase64
+a.download="badge.png"
+a.click()
 
 }
 
