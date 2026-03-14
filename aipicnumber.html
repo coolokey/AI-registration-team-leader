@@ -510,24 +510,17 @@
             }
         }
 
-        // === 終極防禦版：自動降級與多模型嘗試機制 ===
+        // === 終極防禦版：AI 模型自動探索 (Auto-Discovery) 機制 ===
         async function analyzeWithGemini(base64Image, theme) {
             let apiKey = appData.apiKey; 
-            
-            // 準備一組備用清單：加入最相容的舊版視覺模型 gemini-pro-vision 作為最終保底
-            let modelsToTry = [
-                "gemini-1.5-flash",           // 標準 1.5 版 (最快最穩)
-                "gemini-1.5-pro",             // 標準 1.5 高級版
-                "gemini-2.0-flash",           // 最新一代
-                "gemini-pro-vision"           // 1.0 舊版視覺模型 (相容性最高，終極保底)
-            ];
+            let currentModel = "gemini-1.5-flash"; // 預設使用最快最穩的版本
             
             // 智慧環境偵測 (若在預覽沙盒中，強制切換為內建通道)
             const isPreviewSandbox = window.location.hostname.includes("usercontent") || window.location.hostname.includes("googleusercontent");
             
             if (isPreviewSandbox) {
                 apiKey = ""; 
-                modelsToTry = ["gemini-2.5-flash-preview-09-2025"]; 
+                currentModel = "gemini-2.5-flash-preview-09-2025"; 
                 console.log("偵測到預覽沙盒環境，使用內建測試通道...");
             } else if (!apiKey) {
                 throw new Error("請先返回首頁，輸入您的 Gemini API 金鑰！");
@@ -562,18 +555,18 @@
                         { inlineData: { mimeType: "image/png", data: base64Data } }
                     ]
                 }]
-                // ⚠️ 移除 generationConfig，因為 gemini-pro-vision 舊版模型不支援此參數，會引發 400 錯誤
             };
 
             let lastErrorMessage = "";
+            let retries = 5;
+            let delay = 1000;
 
-            // 開始巡迴嘗試模型清單
-            for (let i = 0; i < modelsToTry.length; i++) {
-                let modelName = modelsToTry[i];
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+            // 開始重試迴圈
+            for (let i = 0; i < retries; i++) {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
                 
                 try {
-                    console.log(`📡 正在嘗試連線模型：${modelName}...`);
+                    console.log(`📡 正在嘗試連線模型：${currentModel}...`);
                     const response = await fetch(url, { 
                         method: 'POST', 
                         body: JSON.stringify(payload), 
@@ -583,20 +576,44 @@
                     if (!response.ok) {
                         const responseText = await response.text();
                         
-                        // 金鑰無效是致命錯誤，不用再浪費時間試其他模型了
+                        // 金鑰無效是致命錯誤，直接拋出
                         if (response.status === 400 && responseText.includes("API key not valid")) {
                              throw new Error(`API 金鑰無效。請檢查您的金鑰是否正確！`);
                         }
                         
-                        // 遇到 404 代表這個地區或金鑰不支援這個名稱，紀錄後直接跳到下一個
-                        if (response.status === 404) {
-                             console.warn(`⚠️ 模型 ${modelName} 回報 404 (不支援)，準備切換下一個備用模型...`);
-                             lastErrorMessage = `金鑰無權限存取 ${modelName}`;
-                             continue; 
+                        // 💡 關鍵修復：如果遇到 404 (找不到模型)，啟動「自動探索」去反查 Google 伺服器
+                        if (response.status === 404 && !isPreviewSandbox) {
+                             console.warn(`⚠️ 模型 ${currentModel} 回報 404。啟動「AI 模型自動探索」機制...`);
+                             lastErrorMessage = `您的金鑰找不到模型 ${currentModel}`;
+                             
+                             try {
+                                 // 向 Google API 詢問：這把金鑰到底能用哪些模型？
+                                 const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                                 const listData = await listRes.json();
+                                 const validModels = listData.models?.filter(m => m.supportedGenerationMethods?.includes("generateContent"));
+                                 
+                                 if (validModels && validModels.length > 0) {
+                                     // 優先尋找 1.5-flash，其次 flash，其次 pro
+                                     let fallback = validModels.find(m => m.name.includes("1.5-flash"));
+                                     if (!fallback) fallback = validModels.find(m => m.name.includes("flash"));
+                                     if (!fallback) fallback = validModels.find(m => m.name.includes("pro"));
+                                     if (!fallback) fallback = validModels[0]; // 最後保底
+                                     
+                                     const discoveredModel = fallback.name.replace("models/", "");
+                                     
+                                     if (discoveredModel !== currentModel) {
+                                         console.log(`🔍 動態尋找到可用模型：${discoveredModel}，準備切換重試！`);
+                                         currentModel = discoveredModel;
+                                         continue; // 立刻使用新模型重試
+                                     }
+                                 }
+                             } catch (discoveryError) {
+                                 console.warn("自動探索可用模型失敗：", discoveryError);
+                             }
                         }
                         
                         // 其他網路錯誤
-                        console.warn(`⚠️ 模型 ${modelName} 發生 HTTP 錯誤: ${response.status}`);
+                        console.warn(`⚠️ 模型 ${currentModel} 發生 HTTP 錯誤: ${response.status}`);
                         lastErrorMessage = `HTTP 錯誤 ${response.status}`;
                         continue; 
                     }
@@ -609,23 +626,24 @@
                         continue;
                     }
                     
-                    // 成功取得資料，清理並回傳 (只要成功就立刻結束迴圈)
-                    console.log(`✅ 成功使用 ${modelName} 取得評分結果！`);
+                    // 成功取得資料
+                    console.log(`✅ 成功使用 ${currentModel} 取得評分結果！`);
                     const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
                     return JSON.parse(cleanText);
                     
                 } catch (e) {
-                    // 若是金鑰錯誤或未填寫的致命錯誤，直接打斷所有重試機制
                     if (e.message.includes('金鑰無效') || e.message.includes('請先返回首頁')) {
                         throw e;
                     }
                     lastErrorMessage = e.message;
-                    console.warn(`⚠️ 模型 ${modelName} 發生例外狀況: ${e.message}`);
+                    console.warn(`⚠️ 嘗試 ${i + 1} 發生例外狀況: ${e.message}`);
+                    await new Promise(r => setTimeout(r, delay));
+                    delay *= 2;
                 }
             }
             
-            // 如果所有備用模型全部陣亡 (迴圈跑完仍未 return)，才真正拋出錯誤讓畫面死機
-            throw new Error(`所有模型皆無法存取。\n【診斷】您的 API 金鑰未開通 Gemini 視覺模型權限！\n請務必至「Google AI Studio」重新申請一把全新金鑰。\n最後錯誤：${lastErrorMessage}`);
+            // 如果所有嘗試都失敗
+            throw new Error(`您的 API 金鑰無法存取任何 AI 模型。\n請至 Google AI Studio 建立一個「全新專案」並產生新的金鑰。\n最後錯誤：${lastErrorMessage}`);
         }
 
         // === 顯示結果與特效 ===
