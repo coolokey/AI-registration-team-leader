@@ -2,196 +2,150 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 藝術掃描儀 v2</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>AI Badge Scanner v3</title>
 
 <style>
 
 body{
 background:#020617;
-font-family:system-ui;
-color:white;
-overflow:hidden;
+color:#00eaff;
+font-family:Arial;
+text-align:center;
+margin:0;
 }
 
-.glass{
-background:rgba(15,23,42,.7);
-backdrop-filter:blur(12px);
-border:1px solid rgba(255,255,255,.08);
+h1{
+margin-top:20px;
+letter-spacing:3px;
 }
 
-.scan-ring{
-position:absolute;
-border:2px solid #22d3ee;
+#scanner{
+width:420px;
+height:420px;
+margin:20px auto;
+border:2px solid #00eaff;
 border-radius:50%;
+overflow:hidden;
+position:relative;
+background:black;
+box-shadow:0 0 25px #00eaff;
+}
+
+#img{
+position:absolute;
+cursor:grab;
+transform-origin:top left;
+}
+
+.scanline{
+position:absolute;
+width:100%;
+height:3px;
+background:#00ffff;
+box-shadow:0 0 10px cyan;
 animation:scan 3s linear infinite;
 }
 
 @keyframes scan{
-0%{transform:scale(.3);opacity:1}
-100%{transform:scale(1.5);opacity:0}
-}
-
-.scanner-line{
-position:absolute;
-height:3px;
-width:100%;
-background:#06b6d4;
-box-shadow:0 0 15px #06b6d4;
-animation:line 2s infinite linear;
-}
-
-@keyframes line{
 0%{top:0}
 100%{top:100%}
+}
+
+#controls{
+margin-top:10px;
+}
+
+button{
+padding:10px 20px;
+margin:5px;
+border:none;
+border-radius:5px;
+background:#00eaff;
+color:black;
+font-weight:bold;
+cursor:pointer;
+}
+
+button:hover{
+background:#0ff;
+}
+
+canvas{
+margin-top:20px;
+}
+
+#result{
+margin-top:20px;
+font-size:18px;
+}
+
+#radar{
+margin:auto;
 }
 
 </style>
 </head>
 
-<body class="flex items-center justify-center h-screen">
+<body>
 
-<div id="app" class="w-[420px] h-[780px] glass rounded-3xl p-6 relative overflow-hidden">
+<h1>AI 胸章掃描儀 v3</h1>
 
-<!-- LOGIN -->
+<input type="file" id="upload">
 
-<div id="screenLogin">
+<div id="scanner">
 
-<h1 class="text-center text-2xl font-bold mb-6 text-cyan-400">
-AI 藝術能量掃描儀
-</h1>
+<img id="img">
 
-<input id="studentId" placeholder="班級座號"
-class="w-full bg-slate-800 p-3 rounded-xl mb-3">
-
-<input id="studentName" placeholder="姓名"
-class="w-full bg-slate-800 p-3 rounded-xl mb-4">
-
-<button onclick="startApp()"
-class="w-full bg-cyan-500 py-3 rounded-xl">
-啟動掃描
-</button>
+<div class="scanline"></div>
 
 </div>
 
-<!-- UPLOAD -->
+<div id="controls">
 
-<div id="screenUpload" class="hidden">
+<button onclick="scan()">開始 AI 掃描</button>
 
-<h2 class="text-center mb-4 text-cyan-400">
-上傳畫作
-</h2>
+<button onclick="download()">下載胸章</button>
 
-<div id="cropArea"
-class="relative bg-black aspect-square rounded-xl overflow-hidden">
-
-<label class="absolute inset-0 flex items-center justify-center cursor-pointer">
-
-<input type="file" id="imgInput" class="hidden" accept="image/*">
-
-<span class="text-cyan-400 text-lg">
-點擊上傳
-</span>
-
-</label>
-
-<img id="img" class="absolute hidden">
-
-<div class="scanner-line"></div>
+<button onclick="reset()">重新開始</button>
 
 </div>
 
-<input id="zoom"
-type="range"
-min="0.5"
-max="3"
-step="0.05"
-value="1"
-class="w-full mt-4">
+<canvas id="badge" width="400" height="400"></canvas>
 
-<button onclick="scanAI()"
-class="w-full bg-purple-500 mt-4 py-3 rounded-xl">
-AI 掃描
-</button>
+<canvas id="radar" width="400" height="400"></canvas>
 
-</div>
-
-<!-- LOADING -->
-
-<div id="screenScan"
-class="hidden flex flex-col items-center justify-center h-full">
-
-<div class="relative w-40 h-40">
-
-<div class="scan-ring w-40 h-40"></div>
-<div class="scan-ring w-40 h-40" style="animation-delay:1s"></div>
-
-</div>
-
-<p class="mt-6 text-cyan-400">
-AI 正在分析作品...
-</p>
-
-</div>
-
-<!-- RESULT -->
-
-<div id="screenResult" class="hidden">
-
-<h2 class="text-center text-xl font-bold text-yellow-400">
-AI 評分結果
-</h2>
-
-<img id="resultImg"
-class="w-32 h-32 mx-auto rounded-full mt-4 border-4 border-yellow-400">
-
-<div class="text-center text-4xl font-bold mt-4" id="score">
-0
-</div>
-
-<canvas id="radar" height="220"></canvas>
-
-<button onclick="downloadBadge()"
-class="w-full mt-4 bg-green-500 py-3 rounded-xl">
-下載胸章
-</button>
-
-<button onclick="location.reload()"
-class="w-full mt-3 bg-slate-700 py-3 rounded-xl">
-重新掃描
-</button>
-
-</div>
-
-</div>
+<div id="result"></div>
 
 <script>
 
-let appData={
-imgBase64:""
+let img=document.getElementById("img")
+
+let scale=1
+let posX=0
+let posY=0
+
+let drag=false
+let startX
+let startY
+
+document.getElementById("upload").onchange=e=>{
+
+let file=e.target.files[0]
+
+let reader=new FileReader()
+
+reader.onload=function(ev){
+
+img.src=ev.target.result
+
+img.onload=function(){
+
+scale=1
+posX=0
+posY=0
+update()
+
 }
-
-function startApp(){
-document.getElementById("screenLogin").classList.add("hidden")
-document.getElementById("screenUpload").classList.remove("hidden")
-}
-
-const img=document.getElementById("img")
-const input=document.getElementById("imgInput")
-
-input.onchange=e=>{
-
-const file=e.target.files[0]
-
-const reader=new FileReader()
-
-reader.onload=r=>{
-
-img.src=r.target.result
-img.classList.remove("hidden")
 
 }
 
@@ -199,72 +153,169 @@ reader.readAsDataURL(file)
 
 }
 
-function scanAI(){
+function update(){
 
-const canvas=document.createElement("canvas")
-canvas.width=500
-canvas.height=500
+img.style.transform=
+`translate(${posX}px,${posY}px) scale(${scale})`
 
-const ctx=canvas.getContext("2d")
+}
+
+img.onmousedown=e=>{
+
+drag=true
+startX=e.clientX-posX
+startY=e.clientY-posY
+
+}
+
+document.onmousemove=e=>{
+
+if(!drag)return
+
+posX=e.clientX-startX
+posY=e.clientY-startY
+
+update()
+
+}
+
+document.onmouseup=()=>drag=false
+
+document.getElementById("scanner").onwheel=e=>{
+
+e.preventDefault()
+
+scale+=e.deltaY*-0.001
+
+if(scale<0.3)scale=0.3
+if(scale>5)scale=5
+
+update()
+
+}
+
+function scan(){
+
+let canvas=document.getElementById("badge")
+
+let ctx=canvas.getContext("2d")
+
+ctx.clearRect(0,0,400,400)
 
 ctx.beginPath()
-ctx.arc(250,250,250,0,Math.PI*2)
+ctx.arc(200,200,200,0,Math.PI*2)
 ctx.clip()
 
-ctx.drawImage(img,0,0,500,500)
+let rect=img.getBoundingClientRect()
+let mask=document.getElementById("scanner").getBoundingClientRect()
 
-appData.imgBase64=canvas.toDataURL()
+let ratio=400/mask.width
 
-document.getElementById("screenUpload").classList.add("hidden")
-document.getElementById("screenScan").classList.remove("hidden")
+let dx=(rect.left-mask.left)*ratio
+let dy=(rect.top-mask.top)*ratio
+let dw=rect.width*ratio
+let dh=rect.height*ratio
 
-setTimeout(showResult,2000)
+ctx.drawImage(img,dx,dy,dw,dh)
 
-}
-
-function showResult(){
-
-document.getElementById("screenScan").classList.add("hidden")
-document.getElementById("screenResult").classList.remove("hidden")
-
-document.getElementById("resultImg").src=appData.imgBase64
-
-const theme=Math.floor(Math.random()*40)+60
-const comp=Math.floor(Math.random()*40)+60
-const tech=Math.floor(Math.random()*40)+60
-
-const score=Math.round(theme*.4+comp*.4+tech*.2)
-
-document.getElementById("score").innerText=score
-
-new Chart(document.getElementById("radar"),{
-type:"radar",
-data:{
-labels:["主題","構圖","技巧"],
-datasets:[{
-data:[theme,comp,tech],
-borderColor:"#22d3ee",
-backgroundColor:"rgba(34,211,238,.3)"
-}]
-},
-options:{
-scales:{
-r:{
-min:0,
-max:100
-}
-}
-}
-})
+aiAnalyze()
 
 }
 
-function downloadBadge(){
+function aiAnalyze(){
 
-const a=document.createElement("a")
-a.href=appData.imgBase64
-a.download="badge.png"
-a.click()
+let skills=["創造力","領導力","邏輯力","合作力","表達力"]
+
+let scores=[]
+
+for(let i=0;i<5;i++){
+
+scores.push(Math.floor(Math.random()*40+60))
+
+}
+
+drawRadar(skills,scores)
+
+let best=skills[scores.indexOf(Math.max(...scores))]
+
+document.getElementById("result").innerHTML=
+
+"AI 分析結果：你的最強能力是 <b>"+best+"</b>"
+
+}
+
+function drawRadar(labels,data){
+
+let canvas=document.getElementById("radar")
+
+let ctx=canvas.getContext("2d")
+
+ctx.clearRect(0,0,400,400)
+
+let cx=200
+let cy=200
+let radius=150
+
+let angle=Math.PI*2/labels.length
+
+ctx.strokeStyle="#00ffff"
+
+for(let i=0;i<labels.length;i++){
+
+let a=i*angle-Math.PI/2
+
+let x=cx+radius*Math.cos(a)
+let y=cy+radius*Math.sin(a)
+
+ctx.beginPath()
+ctx.moveTo(cx,cy)
+ctx.lineTo(x,y)
+ctx.stroke()
+
+ctx.fillText(labels[i],x,y)
+
+}
+
+ctx.beginPath()
+
+for(let i=0;i<data.length;i++){
+
+let r=radius*(data[i]/100)
+
+let a=i*angle-Math.PI/2
+
+let x=cx+r*Math.cos(a)
+let y=cy+r*Math.sin(a)
+
+if(i==0)ctx.moveTo(x,y)
+else ctx.lineTo(x,y)
+
+}
+
+ctx.closePath()
+
+ctx.fillStyle="rgba(0,255,255,0.3)"
+ctx.fill()
+
+ctx.stroke()
+
+}
+
+function download(){
+
+let link=document.createElement("a")
+
+link.download="badge.png"
+
+link.href=document.getElementById("badge").toDataURL()
+
+link.click()
+
+}
+
+function reset(){
+
+location.reload()
 
 }
 
