@@ -40,23 +40,30 @@
         
         <!-- 畫面一：登入身分確認 -->
         <div id="screen-login" class="absolute inset-0 flex flex-col items-center justify-center glass-panel rounded-3xl p-8 transition-opacity duration-500">
-            <div class="w-24 h-24 bg-cyan-500 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(6,182,212,0.6)] animate-pulse">
+            <div class="w-24 h-24 bg-cyan-500 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(6,182,212,0.6)] animate-pulse shrink-0">
                 <i class="fas fa-fingerprint text-4xl text-white"></i>
             </div>
             <h1 class="text-3xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">能量掃描儀啟動</h1>
-            <p class="text-slate-400 mb-8 text-center">請輸入畫家代號以綁定作品</p>
+            <p class="text-slate-400 mb-6 text-center">請輸入畫家代號以綁定作品</p>
             
-            <div class="w-full space-y-4">
+            <div class="w-full space-y-4 overflow-y-auto pb-4">
                 <div>
                     <label class="block text-sm text-cyan-400 mb-1 ml-2">班級與座號 (例: 80105)</label>
-                    <input type="number" id="input-id" class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-6 py-4 text-xl focus:outline-none focus:border-cyan-500 transition-colors" placeholder="請輸入數字">
+                    <input type="number" id="input-id" class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-6 py-3 text-xl focus:outline-none focus:border-cyan-500 transition-colors" placeholder="請輸入數字">
                 </div>
                 <div>
                     <label class="block text-sm text-cyan-400 mb-1 ml-2">特級繪師大名</label>
-                    <input type="text" id="input-name" class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-6 py-4 text-xl focus:outline-none focus:border-cyan-500 transition-colors" placeholder="請輸入姓名">
+                    <input type="text" id="input-name" class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-6 py-3 text-xl focus:outline-none focus:border-cyan-500 transition-colors" placeholder="請輸入姓名">
                 </div>
+                <div>
+                    <label class="block text-sm text-pink-400 mb-1 ml-2"><i class="fas fa-key mr-1"></i> Gemini API 金鑰 (選填)</label>
+                    <input type="password" id="input-apikey" class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-6 py-3 text-lg focus:outline-none focus:border-pink-500 transition-colors" placeholder="AIzaSy...">
+                    <p class="text-xs text-slate-500 ml-2 mt-1">※ 在此預覽面板測試時請「保持空白」，下載至本機後再輸入。</p>
+                </div>
+                
                 <div id="login-error" class="hidden text-red-400 text-sm text-center font-bold">請輸入完整的座號與姓名！</div>
-                <button onclick="goToTheme()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-4 rounded-2xl text-xl mt-6 shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-transform active:scale-95">
+                
+                <button onclick="goToTheme()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-4 rounded-2xl text-xl mt-4 shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-transform active:scale-95 shrink-0">
                     進入掃描艙 <i class="fas fa-arrow-right ml-2"></i>
                 </button>
             </div>
@@ -320,6 +327,7 @@
         let appData = {
             studentId: '',
             studentName: '',
+            apiKey: '', // 儲存使用者輸入的金鑰
             theme: '',
             croppedImageBase64: ''
         };
@@ -337,15 +345,21 @@
         function goToTheme() {
             const id = document.getElementById('input-id').value;
             const name = document.getElementById('input-name').value;
+            const apiKey = document.getElementById('input-apikey').value.trim();
             const errorMsg = document.getElementById('login-error');
             
+            // 驗證是否都有輸入 (金鑰改為非必填，以適應雙環境)
             if(!id || !name) {
+                errorMsg.innerText = "請輸入完整的座號與姓名！";
                 errorMsg.classList.remove('hidden');
                 return;
             }
             errorMsg.classList.add('hidden');
+            
+            // 寫入全局變數
             appData.studentId = id;
             appData.studentName = name;
+            appData.apiKey = apiKey;
             showScreen('screen-theme');
         }
 
@@ -492,7 +506,7 @@
                     techScore: 0,
                     title: "連線中斷",
                     feedback: "無法取得真實 AI 評審的回應。\n詳細錯誤：" + error.message,
-                    advice: "請確認您的網路連線狀態，或稍等幾分鐘後再重新挑戰！"
+                    advice: "請確認您剛才輸入的 API 金鑰是否正確，或稍候再重新挑戰！"
                 };
                 displayResult(-1, errorResult); // 傳入 -1 代表這是一次失敗的連線
             }
@@ -500,18 +514,14 @@
 
         // === 嚴格版真實 AI 視覺辨識引擎 ===
         async function analyzeWithGemini(base64Image, theme) {
-            // ⚠️ 老師請看這裡：金鑰與模型設定 ⚠️
-            // 已為您保留您輸入的真實金鑰
-            const USER_API_KEY = "AIzaSyCZivva3HvYDh-KLqag1RLlYEj3hHYope0"; 
+            // 使用者在首頁親自輸入的金鑰
+            const apiKey = appData.apiKey; 
             
-            let apiKey = "";
-            let modelName = "gemini-2.5-flash"; // 將預設模型改為最新穩定版支援名稱
-
-            // 如果偵測到使用了真實金鑰，自動切換為正式公開版模型
-            if (USER_API_KEY && USER_API_KEY.startsWith("AIza")) {
-                apiKey = USER_API_KEY;
-                // 💡 關鍵修正：將原本找不到的 gemini-1.5-flash 改為最新的 gemini-2.5-flash
-                modelName = "gemini-2.5-flash"; 
+            // 智慧環境判斷邏輯
+            let modelName = "gemini-2.5-flash-preview-09-2025"; // 預設：預覽沙盒專用模型
+            if (apiKey) {
+                // 若有輸入金鑰，代表已經脫離沙盒（本機端執行），自動切換為正式公開模型，避免 404
+                modelName = "gemini-1.5-flash"; 
             }
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
@@ -525,7 +535,17 @@
 使用者選擇的挑戰主題是：「${theme}」。
 【重要任務】：請「仔細觀察圖片內容」是否符合使用者選擇的主題！
 - 如果圖片內容明顯與主題不符（例如：畫面是Q版人物、動物或毫無關聯的東西，但主題卻選了「風景」或「機械」），請在「themeScore」給予極低分（0-20分），並在 feedback 中無情點出「完全文不對題」。
-- 如果圖片符合主題，請依照畫面結構與繪畫技巧正常給予評分。`;
+- 如果圖片符合主題，請依照畫面結構與繪畫技巧正常給予評分。
+
+請務必回傳純 JSON 格式，不要包含任何 Markdown 標記，格式如下：
+{
+  "themeScore": 85,
+  "compScore": 90,
+  "techScore": 88,
+  "title": "響亮的中二稱號",
+  "feedback": "教練講評(包含主題是否契合的說明，50字內)",
+  "advice": "修煉建議(具體技巧建議，50字內)"
+}`;
 
             const payload = {
                 contents: [{
@@ -536,18 +556,7 @@
                     ]
                 }],
                 generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: {
-                            themeScore: { type: "INTEGER" },
-                            compScore: { type: "INTEGER" },
-                            techScore: { type: "INTEGER" },
-                            title: { type: "STRING" },
-                            feedback: { type: "STRING" },
-                            advice: { type: "STRING" }
-                        }
-                    }
+                    responseMimeType: "application/json"
                 }
             };
 
@@ -565,6 +574,9 @@
                     
                     if (!response.ok) {
                         const responseText = await response.text();
+                        if (response.status === 400 && responseText.includes("API key not valid")) {
+                             throw new Error(`API 金鑰無效 (${response.status})。請檢查您輸入的金鑰是否正確！`);
+                        }
                         throw new Error(`伺服器錯誤狀態 ${response.status}: ${responseText}`);
                     }
 
@@ -575,13 +587,16 @@
                         throw new Error("API 回傳資料格式異常（內容為空）");
                     }
                     
-                    return JSON.parse(text);
+                    // 清理可能包含的 Markdown 標記
+                    const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                    return JSON.parse(cleanText);
                     
                 } catch (e) {
-                    if (i === retries - 1) {
-                        // 如果 5 次全敗，則真實拋出錯誤，讓外層顯示「連線中斷」 UI
-                        throw new Error(`重試 ${retries} 次後依然無法連線。(${e.message})`);
+                    if (e.message.includes('API 金鑰無效') || i === retries - 1) {
+                        // 遇到金鑰無效不重試，直接拋出錯誤讓畫面提示
+                        throw new Error(`(${e.message})`);
                     }
+                    console.warn(`[AI 掃描] 嘗試 ${i + 1} 失敗，等待重試...`);
                     await new Promise(r => setTimeout(r, delay));
                     delay *= 2;
                 }
@@ -723,9 +738,10 @@
             document.getElementById('action-success').classList.add('hidden');
             document.getElementById('action-retry').classList.add('hidden');
             
+            // 返回登入畫面以便可以換人/換金鑰，或可直接回到 screen-theme (這裡我們讓它回到主題選擇以加快流程)
+            // 若要保留原本回主題的邏輯不變，就不重置金鑰。
             showScreen('screen-theme');
         }
     </script>
 </body>
 </html>
-
