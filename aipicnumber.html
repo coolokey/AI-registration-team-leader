@@ -179,7 +179,13 @@
 
         <!-- 畫面三：上傳與圓形裁切 -->
         <div id="screen-crop" class="absolute inset-0 flex flex-col glass-panel rounded-3xl p-6 transition-opacity duration-500 hidden opacity-0">
-            <button onclick="showScreen('screen-theme')" class="self-start text-slate-400 hover:text-white mb-2"><i class="fas fa-chevron-left mr-2"></i>返回主題</button>
+            <div class="flex justify-between items-center w-full mb-2">
+                <button onclick="showScreen('screen-theme')" class="text-slate-400 hover:text-white"><i class="fas fa-chevron-left mr-2"></i>返回主題</button>
+                <label id="btn-reupload" class="hidden text-cyan-400 hover:text-white cursor-pointer text-sm transition-colors">
+                    <i class="fas fa-sync-alt mr-1"></i>更換圖片
+                    <input type="file" accept="image/*" class="hidden" onchange="loadImage(event)">
+                </label>
+            </div>
             <h2 class="text-xl font-bold mb-1 text-center text-white" id="display-theme">主題</h2>
             <p class="text-sm text-cyan-400 text-center mb-4">請移動並縮放圖片，對準胸章範圍</p>
             
@@ -387,6 +393,7 @@
                     document.getElementById('circular-mask').classList.remove('hidden');
                     document.getElementById('zoom-controls').classList.remove('hidden');
                     document.getElementById('btn-submit').classList.remove('hidden');
+                    document.getElementById('btn-reupload').classList.remove('hidden');
                     
                     const areaSize = cropArea.clientWidth;
                     const imgRatio = imgEl.naturalWidth / imgEl.naturalHeight;
@@ -404,6 +411,9 @@
                     imgState.y = (areaSize - imgState.baseHeight) / 2;
                     zoomSlider.value = 1;
                     updateImageTransform();
+
+                    // 清除 input 的值，允許重複選取同一張圖片
+                    event.target.value = '';
                 }
             };
             reader.readAsDataURL(file);
@@ -767,6 +777,7 @@
             document.getElementById('circular-mask').classList.add('hidden');
             document.getElementById('zoom-controls').classList.add('hidden');
             document.getElementById('btn-submit').classList.add('hidden');
+            document.getElementById('btn-reupload').classList.add('hidden');
             
             // 重置 UI 狀態
             document.getElementById('score-ring').style.strokeDashoffset = 301.6;
