@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣郵遞區號六碼查詢 | 3+3碼快速查詢工具</title>
+    <meta name="description" content="台灣郵遞區號六碼（3+3碼）快速查詢工具，支援多筆地址批次查詢，貼上地址即可快速查詢郵遞區號。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Animated background particles -->
+    <div class="bg-particles" id="bgParticles"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">
+                <span class="logo-icon">📮</span>
+                <span class="logo-text">郵遞區號查詢</span>
+            </div>
+            <div class="header-badge">3+3碼 ・ 多筆查詢</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1 class="hero-title">
+                <span class="hero-title-line">台灣郵遞區號</span>
+                <span class="hero-title-accent">六碼批次查詢</span>
+            </h1>
+            <p class="hero-subtitle">貼上多筆地址（每行一筆），一次查詢所有郵遞區號</p>
+        </section>
+
+        <!-- Search Section -->
+        <section class="search-section">
+            <div class="search-card" id="searchCard">
+                <div class="search-card-glow"></div>
+                <div class="search-card-content">
+                    <label for="addressInput" class="input-label">
+                        <span class="label-icon">🏠</span>
+                        輸入或貼上地址（每行一筆，支援多筆批次查詢）
+                    </label>
+                    <div class="input-wrapper">
+                        <textarea
+                            id="addressInput"
+                            class="address-input"
+                            placeholder="例如：&#10;台北市中正區重慶南路一段122號&#10;新北市板橋區中山路一段161號&#10;台中市西屯區台灣大道三段99號"
+                            rows="5"
+                            autofocus
+                        ></textarea>
+                        <button class="paste-btn" id="pasteBtn" title="從剪貼簿貼上">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="search-actions">
+                        <button class="search-btn" id="searchBtn">
+                            <span class="search-btn-text">批次查詢郵遞區號</span>
+                            <span class="search-btn-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </span>
+                            <span class="search-btn-loading" id="searchLoading">
+                                <div class="spinner"></div>
+                            </span>
+                        </button>
+                        <button class="clear-input-btn" id="clearInputBtn" title="清除輸入">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            <span>清除</span>
+                        </button>
+                    </div>
+                    <div class="input-hint" id="addressCount">
+                        <span class="hint-icon">💡</span>
+                        <span>每行輸入一筆地址，按 Enter 換行可繼續新增</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Progress Section -->
+        <section class="progress-section" id="progressSection" style="display:none;">
+            <div class="progress-card">
+                <div class="progress-header">
+                    <span class="progress-icon">⏳</span>
+                    <span class="progress-text" id="progressText">查詢中...</span>
+                </div>
+                <div class="progress-bar-wrap">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Batch Result Section -->
+        <section class="result-section" id="resultSection" style="display:none;">
+            <div class="result-batch-card">
+                <div class="result-batch-header">
+                    <div class="result-batch-title-wrap">
+                        <span class="result-batch-icon">✅</span>
+                        <h2 class="result-batch-title">查詢結果</h2>
+                        <span class="result-batch-count" id="resultCount"></span>
+                    </div>
+                    <div class="result-batch-actions">
+                        <button class="copy-all-btn" id="copyAllBtn" title="複製全部結果">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <span>複製全部</span>
+                        </button>
+                    </div>
+                </div>
+                <!-- Results Table -->
+                <div class="result-table-wrap">
+                    <table class="result-table" id="resultTable">
+                        <thead>
+                            <tr>
+                                <th class="col-num">#</th>
+                                <th class="col-address">輸入地址</th>
+                                <th class="col-zip6">六碼</th>
+                                <th class="col-zip5">五碼</th>
+                                <th class="col-status">狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- History Section -->
+        <section class="history-section" id="historySection" style="display:none;">
+            <div class="history-header">
+                <h2 class="history-title">
+                    <span class="history-icon">📋</span>
+                    查詢紀錄
+                </h2>
+                <button class="history-clear-btn" id="clearHistoryBtn">清除紀錄</button>
+            </div>
+            <div class="history-list" id="historyList"></div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <p>資料來源：<a href="https://www.post.gov.tw" target="_blank" rel="noopener noreferrer">中華郵政</a> ・ API 提供：<a href="https://zip5.5432.tw" target="_blank" rel="noopener noreferrer">zip5.5432.tw</a></p>
+            <p class="footer-note">查詢結果僅供參考，如有疑慮請以中華郵政資料為準</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
